@@ -129,6 +129,11 @@ class RecentFilesListView extends ItemView {
       this.app.workspace.getMostRecentLeaf().openFile(targetFile);
     } else {
       new Notice('Cannot find a file with that name');
+      this.data.recentFiles = this.data.recentFiles.filter(
+        (fp) => fp.basename !== file.basename,
+      );
+      this.plugin.saveData();
+      this.redraw();
     }
   };
 }
