@@ -1,6 +1,6 @@
 {
   "name": "recent-files-obsidian",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "List files by most recently opened",
   "main": "main.js",
   "scripts": {
