@@ -1,3 +1,4 @@
+import { notDeepStrictEqual } from 'assert';
 import {
   addIcon,
   App,
@@ -25,7 +26,7 @@ interface RecentFilesData {
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  maxLength: 5,
+  maxLength: 50,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -100,15 +101,7 @@ class RecentFilesListView extends ItemView {
       path: file.path,
     });
 
-    const toRemove = this.data.recentFiles.length - this.data.maxLength;
-    if (toRemove > 0) {
-      this.data.recentFiles.splice(
-        this.data.recentFiles.length - toRemove,
-        toRemove,
-      );
-    }
-
-    await this.plugin.saveData();
+    await this.plugin.pruneLength(); // Handles the save
   };
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
@@ -172,6 +165,17 @@ export default class RecentFilesPlugin extends Plugin {
     await this.saveData();
   };
 
+  public readonly pruneLength = async (): Promise<void> => {
+    const toRemove = this.data.recentFiles.length - this.data.maxLength;
+    if (toRemove > 0) {
+      this.data.recentFiles.splice(
+        this.data.recentFiles.length - toRemove,
+        toRemove,
+      );
+    }
+    await this.saveData();
+  };
+
   public readonly shouldAddFile = (file: FilePath): boolean =>
     this.data.omittedPaths
       .filter((path) => path.length > 0) // Ignore empty lines
@@ -217,6 +221,27 @@ class RecentFilesSettingTab extends PluginSettingTab {
             this.plugin.view.redraw();
           }),
       );
+
+    new Setting(containerEl)
+      .setName('List length')
+      .setDesc('Maximum number of filenames to keep in the list.')
+      .addText((text) => {
+        text.inputEl.setAttr('type', 'number');
+        text.inputEl.setAttr('placeholder', '50');
+        text
+          .setValue(this.plugin.data.maxLength.toString())
+          .onChange((value) => {
+            const parsed = parseInt(value, 10);
+            if (!parsed || parsed < 0) {
+              new Notice('Invalid value set for List length setting');
+              return;
+            }
+
+            this.plugin.data.maxLength = parsed;
+            this.plugin.pruneLength();
+            this.plugin.view.redraw();
+          });
+      });
 
     const div = containerEl.createEl('div', {
       cls: 'recent-files-donation',
