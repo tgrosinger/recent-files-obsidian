@@ -3,6 +3,7 @@ import {
   App,
   EventRef,
   ItemView,
+  Notice,
   Plugin,
   PluginSettingTab,
   Setting,
@@ -43,6 +44,7 @@ class RecentFilesListView extends ItemView {
 
     this.plugin = plugin;
     this.data = data;
+    this.redraw();
   }
 
   public getViewType(): string {
@@ -77,7 +79,7 @@ class RecentFilesListView extends ItemView {
       const navFile = childrenEl.createDiv({ cls: 'nav-file' });
       const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
 
-      if (currentFile.basename === openFile.basename) {
+      if (openFile && currentFile.basename === openFile.basename) {
         navFileTitle.addClass('is-active');
       }
 
@@ -135,6 +137,8 @@ class RecentFilesListView extends ItemView {
 
       if (targetFile) {
         this.app.workspace.getMostRecentLeaf().openFile(targetFile);
+      } else {
+        new Notice('Cannot find a file with that name');
       }
     }
   };
