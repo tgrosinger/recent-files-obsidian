@@ -38,7 +38,7 @@ class RecentFilesListView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     plugin: RecentFilesPlugin,
-    data: RecentFilesData
+    data: RecentFilesData,
   ) {
     super(leaf);
 
@@ -98,7 +98,7 @@ class RecentFilesListView extends ItemView {
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     this.data.recentFiles = this.data.recentFiles.filter(
-      (currFile) => currFile.basename !== file.basename
+      (currFile) => currFile.basename !== file.basename,
     );
     this.data.recentFiles.splice(0, 0, {
       basename: file.basename,
@@ -109,7 +109,7 @@ class RecentFilesListView extends ItemView {
     if (toRemove > 0) {
       this.data.recentFiles.splice(
         this.data.recentFiles.length - toRemove,
-        toRemove
+        toRemove,
       );
     }
 
@@ -157,7 +157,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     this.registerView(
       RecentFilesListViewType,
-      (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data))
+      (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
     );
 
     this.addRibbonIcon('clock', 'Recent Files', this.initView);
@@ -221,7 +221,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
             this.plugin.data.omittedPaths = value.split('\n');
             this.plugin.pruneOmittedFiles();
             this.plugin.view.redraw();
-          })
+          }),
       );
 
     const div = containerEl.createEl('div', {
@@ -231,7 +231,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-        'continued development, please use the buttons below:'
+        'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
@@ -239,16 +239,16 @@ class RecentFilesSettingTab extends PluginSettingTab {
       createDonateButton(
         'https://www.buymeacoffee.com/tgrosinger',
         'Buy Me a Coffee',
-        'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png'
-      )
+        'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png',
+      ),
     );
 
     div.appendChild(
       createDonateButton(
         'https://paypal.me/tgrosinger',
         'PayPal.Me',
-        'https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_150x38.png'
-      )
+        'https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_150x38.png',
+      ),
     );
   }
 }
@@ -256,7 +256,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
 const createDonateButton = (
   link: string,
   name: string,
-  imgURL: string
+  imgURL: string,
 ): HTMLElement => {
   const a = document.createElement('a');
   a.setAttribute('href', link);
