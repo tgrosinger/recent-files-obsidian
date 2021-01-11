@@ -4,6 +4,7 @@ import {
   App,
   EventRef,
   ItemView,
+  Menu,
   Notice,
   Plugin,
   PluginSettingTab,
@@ -57,6 +58,28 @@ class RecentFilesListView extends ItemView {
 
   public getIcon(): string {
     return 'clock';
+  }
+
+  public onHeaderMenu(menu: Menu): void {
+    menu
+      .addItem((item) => {
+        item
+          .setTitle('Clear list')
+          .setIcon('sweep')
+          .onClick(async () => {
+            this.data.recentFiles = [];
+            await this.plugin.saveData();
+            this.redraw();
+          });
+      })
+      .addItem((item) => {
+        item
+          .setTitle('Close')
+          .setIcon('cross')
+          .onClick(() => {
+            this.app.workspace.detachLeavesOfType(RecentFilesListViewType);
+          });
+      });
   }
 
   public load(): void {
@@ -141,6 +164,7 @@ export default class RecentFilesPlugin extends Plugin {
     await this.loadData();
 
     addIcon('clock', clockIcon);
+    addIcon('sweep', sweepIcon);
 
     this.registerView(
       RecentFilesListViewType,
@@ -284,6 +308,16 @@ const clockIcon = `
 <svg fill="currentColor" stroke="currentColor" version="1.1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <path d="m368 394.67c-4.0977 0-8.1914-1.5586-11.309-4.6953l-112-112c-3.0078-3.0078-4.6914-7.082-4.6914-11.305v-149.34c0-8.832 7.168-16 16-16s16 7.168 16 16v142.7l107.31 107.31c6.25 6.25 6.25 16.383 0 22.633-3.1172 3.1367-7.2109 4.6953-11.309 4.6953z"/>
   <ellipse cx="259.25" cy="258.17" rx="245.77" ry="244.68" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="25"/>
+</svg>`;
+
+const sweepIcon = `
+<svg fill="currentColor" stroke="currentColor" version="1.1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <path d="m495.72 1.582c-7.456-3.691-16.421-0.703-20.142 6.694l-136.92 274.08-26.818-13.433c-22.207-11.118-49.277-2.065-60.396 20.083l-6.713 13.405 160.96 80.616 6.713-13.411c11.087-22.143 2.227-49.18-20.083-60.381l-26.823-13.435 136.92-274.08c3.706-7.412 0.703-16.421-6.694-20.141z"/>
+  <circle cx="173" cy="497" r="15"/>
+  <circle cx="23" cy="407" r="15"/>
+  <circle cx="83" cy="437" r="15"/>
+  <path d="m113 482h-60c-8.276 0-15-6.724-15-15 0-8.291-6.709-15-15-15s-15 6.709-15 15c0 24.814 20.186 45 45 45h60c8.291 0 15-6.709 15-15s-6.709-15-15-15z"/>
+  <path d="m108.64 388.07c-6.563 0.82-11.807 5.845-12.92 12.349-1.113 6.519 2.153 12.993 8.057 15.952l71.675 35.889c12.935 6.475 27.231 9.053 41.177 7.573-1.641 6.65 1.479 13.784 7.852 16.992l67.061 33.589c5.636 2.78 12.169 1.8 16.685-2.197 2.347-2.091 53.436-48.056 83.3-98.718l-161.6-80.94c-36.208 48.109-120.36 59.39-121.28 59.511z"/>
 </svg>`;
 
 const buyMeACoffee = `
