@@ -1,14 +1,14 @@
 import {
+  addIcon,
   App,
+  EventRef,
+  ItemView,
   Plugin,
   PluginSettingTab,
   Setting,
-  ItemView,
-  WorkspaceLeaf,
-  EventRef,
   TFile,
-  addIcon,
-} from "obsidian";
+  WorkspaceLeaf,
+} from 'obsidian';
 
 interface File {
   path: string;
@@ -27,11 +27,11 @@ const DEFAULT_DATA: RecentFilesData = {
   maxLength: 5,
 };
 
-const RecentFilesListViewType = "recent-files";
+const RecentFilesListViewType = 'recent-files';
 
 class RecentFilesListView extends ItemView {
   private listeners: EventRef[];
-  private plugin: RecentFilesPlugin;
+  private readonly plugin: RecentFilesPlugin;
   private data: RecentFilesData;
 
   constructor(
@@ -45,27 +45,56 @@ class RecentFilesListView extends ItemView {
     this.data = data;
   }
 
-  getViewType(): string {
+  public getViewType(): string {
     return RecentFilesListViewType;
   }
 
-  getDisplayText(): string {
-    return "Recent Files";
+  public getDisplayText(): string {
+    return 'Recent Files';
   }
 
-  getIcon(): string {
-    return "clock";
+  public getIcon(): string {
+    return 'clock';
   }
 
-  async onOpen(): Promise<void> {
-    this.listeners = [this.app.workspace.on("file-open", this.update)];
+  public async onOpen(): Promise<void> {
+    this.listeners = [this.app.workspace.on('file-open', this.update)];
   }
 
-  async onClose() {
+  public async onClose(): Promise<void> {
     this.listeners.forEach((listener) => this.app.workspace.offref(listener));
   }
 
-  private readonly updateData = (file: TFile) => {
+  public readonly redraw = (): void => {
+    const openFile = this.app.workspace.getActiveFile();
+
+    const rootEl = document.createElement('div');
+    rootEl.addClasses(['nav-folder', 'mod-root']);
+
+    const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
+
+    this.data.recentFiles.forEach((currentFile) => {
+      const navFile = childrenEl.createDiv({ cls: 'nav-file' });
+      const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+
+      if (currentFile.basename === openFile.basename) {
+        navFileTitle.addClass('is-active');
+      }
+
+      navFileTitle.createDiv({
+        cls: 'nav-file-title-content',
+        text: currentFile.basename,
+      });
+
+      navFile.onClickEvent(this.handleFileClick);
+    });
+
+    const contentEl = this.containerEl.children[1];
+    contentEl.empty();
+    contentEl.appendChild(rootEl);
+  };
+
+  private readonly updateData = async (file: TFile): Promise<void> => {
     this.data.recentFiles = this.data.recentFiles.filter(
       (currFile) => currFile.basename !== file.basename
     );
@@ -82,50 +111,21 @@ class RecentFilesListView extends ItemView {
       );
     }
 
-    this.plugin.saveData();
+    await this.plugin.saveData();
   };
 
-  private readonly update = (openedFile: TFile) => {
+  private readonly update = async (openedFile: TFile): Promise<void> => {
     if (!this.plugin.shouldAddFile(openedFile)) {
       return;
     }
 
-    this.updateData(openedFile);
+    await this.updateData(openedFile);
     this.redraw();
   };
 
-  public readonly redraw = () => {
-    const openFile = this.app.workspace.getActiveFile();
-
-    const rootEl = document.createElement("div");
-    rootEl.addClasses(["nav-folder", "mod-root"]);
-
-    const childrenEl = rootEl.createDiv({ cls: "nav-folder-children" });
-
-    this.data.recentFiles.forEach((currentFile) => {
-      const navFile = childrenEl.createDiv({ cls: "nav-file" });
-      const navFileTitle = navFile.createDiv({ cls: "nav-file-title" });
-
-      if (currentFile.basename === openFile.basename) {
-        navFileTitle.addClass("is-active");
-      }
-
-      navFileTitle.createDiv({
-        cls: "nav-file-title-content",
-        text: currentFile.basename,
-      });
-
-      navFile.onClickEvent(this.handleFileClick);
-    });
-
-    const contentEl = this.containerEl.children[1];
-    contentEl.empty();
-    contentEl.appendChild(rootEl);
-  };
-
-  private readonly handleFileClick = (event: MouseEvent) => {
+  private readonly handleFileClick = (event: MouseEvent): void => {
     if (event.target instanceof HTMLDivElement) {
-      const targetFileName = event.target.hasClass("nav-file-title-content")
+      const targetFileName = event.target.hasClass('nav-file-title-content')
         ? event.target.getText()
         : event.target.children[0].getText();
 
@@ -141,35 +141,45 @@ class RecentFilesListView extends ItemView {
 }
 
 export default class RecentFilesPlugin extends Plugin {
-  data: RecentFilesData;
-  view: RecentFilesListView;
+  public data: RecentFilesData;
+  public view: RecentFilesListView;
 
-  async onload() {
-    console.log("loading plugin");
+  public async onload(): Promise<void> {
+    console.log('loading plugin');
 
     await this.loadData();
 
-    addIcon("clock", clockIcon);
+    addIcon('clock', clockIcon);
 
     this.registerView(
       RecentFilesListViewType,
       (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data))
     );
 
-    this.addRibbonIcon("clock", "Recent Files", this.initView);
+    this.addRibbonIcon('clock', 'Recent Files', this.initView);
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
 
-  async loadData() {
+  public async loadData(): Promise<void> {
     this.data = Object.assign(DEFAULT_DATA, await super.loadData());
   }
 
-  async saveData() {
+  public async saveData(): Promise<void> {
     await super.saveData(this.data);
   }
 
-  private initView = () => {
+  public readonly pruneOmittedFiles = async (): Promise<void> => {
+    this.data.recentFiles = this.data.recentFiles.filter(this.shouldAddFile);
+    await this.saveData();
+  };
+
+  public readonly shouldAddFile = (file: File): boolean =>
+    this.data.omittedPaths
+      .filter((path) => path.length > 0) // Ignore empty lines
+      .find((omittedPath) => file.path.startsWith(omittedPath)) === undefined;
+
+  private readonly initView = (): void => {
     if (this.app.workspace.getLeavesOfType(RecentFilesListViewType).length) {
       return;
     }
@@ -179,71 +189,61 @@ export default class RecentFilesPlugin extends Plugin {
       active: true,
     });
   };
-
-  public readonly pruneOmittedFiles = () => {
-    this.data.recentFiles = this.data.recentFiles.filter(this.shouldAddFile);
-    this.saveData();
-  };
-
-  public readonly shouldAddFile = (file: File): boolean =>
-    this.data.omittedPaths
-      .filter((path) => path.length > 0) // Ignore empty lines
-      .find((omittedPath) => file.path.startsWith(omittedPath)) === undefined;
 }
 
 class RecentFilesSettingTab extends PluginSettingTab {
-  plugin: RecentFilesPlugin;
+  private readonly plugin: RecentFilesPlugin;
 
   constructor(app: App, plugin: RecentFilesPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
-  display(): void {
-    let { containerEl } = this;
+  public display(): void {
+    const { containerEl } = this;
 
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Recent Files List" });
+    containerEl.createEl('h2', { text: 'Recent Files List' });
 
     new Setting(containerEl)
-      .setName("Omitted paths")
-      .setDesc("File path prefixes to ignore. One path per line.")
+      .setName('Omitted paths')
+      .setDesc('File path prefixes to ignore. One path per line.')
       .addTextArea((textArea) =>
         textArea
-          .setPlaceholder("daily/")
-          .setValue(this.plugin.data.omittedPaths.join("\n"))
+          .setPlaceholder('daily/')
+          .setValue(this.plugin.data.omittedPaths.join('\n'))
           .onChange(async (value) => {
-            this.plugin.data.omittedPaths = value.split("\n");
+            this.plugin.data.omittedPaths = value.split('\n');
             this.plugin.pruneOmittedFiles();
             this.plugin.view.redraw();
           })
       );
 
-    const div = containerEl.createEl("div", {
-      cls: "recent-files-donation",
+    const div = containerEl.createEl('div', {
+      cls: 'recent-files-donation',
     });
 
-    const donateText = document.createElement("p");
+    const donateText = document.createElement('p');
     donateText.appendText(
-      "If this plugin adds value for you and you would like to help support " +
-        "continued development, please use the buttons below:"
+      'If this plugin adds value for you and you would like to help support ' +
+        'continued development, please use the buttons below:'
     );
     div.appendChild(donateText);
 
     div.appendChild(
       createDonateButton(
-        "https://www.buymeacoffee.com/tgrosinger",
-        "Buy Me a Coffee",
-        "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+        'https://www.buymeacoffee.com/tgrosinger',
+        'Buy Me a Coffee',
+        'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png'
       )
     );
 
     div.appendChild(
       createDonateButton(
-        "https://paypal.me/tgrosinger",
-        "PayPal.Me",
-        "https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_150x38.png"
+        'https://paypal.me/tgrosinger',
+        'PayPal.Me',
+        'https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_150x38.png'
       )
     );
   }
@@ -254,13 +254,13 @@ const createDonateButton = (
   name: string,
   imgURL: string
 ): HTMLElement => {
-  const a = document.createElement("a");
-  a.setAttribute("href", link);
-  a.addClass("recent-files-donate-button");
+  const a = document.createElement('a');
+  a.setAttribute('href', link);
+  a.addClass('recent-files-donate-button');
 
-  const img = document.createElement("img");
-  img.setAttribute("width", "150px");
-  img.setAttribute("src", imgURL);
+  const img = document.createElement('img');
+  img.setAttribute('width', '150px');
+  img.setAttribute('src', imgURL);
   img.setText(name);
 
   a.appendChild(img);
