@@ -171,7 +171,11 @@ export default class RecentFilesPlugin extends Plugin {
       (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
     );
 
-    this.addRibbonIcon('clock', 'Recent Files', this.initView);
+    if (this.app.workspace.layoutReady) {
+      this.initView();
+    } else {
+      this.registerEvent(this.app.workspace.on('layout-ready', this.initView));
+    }
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
