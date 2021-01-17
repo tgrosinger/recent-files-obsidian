@@ -91,14 +91,13 @@ class RecentFilesListView extends ItemView {
     const openFile = this.app.workspace.getActiveFile();
 
     const rootEl = createDiv({ cls: 'nav-folder mod-root' });
-
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
     this.data.recentFiles.forEach((currentFile) => {
       const navFile = childrenEl.createDiv({ cls: 'nav-file' });
       const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
 
-      if (openFile && currentFile.basename === openFile.basename) {
+      if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
       }
 
@@ -119,7 +118,7 @@ class RecentFilesListView extends ItemView {
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     this.data.recentFiles = this.data.recentFiles.filter(
-      (currFile) => currFile.basename !== file.basename,
+      (currFile) => currFile.path !== file.path,
     );
     this.data.recentFiles.unshift({
       basename: file.basename,
@@ -141,7 +140,7 @@ class RecentFilesListView extends ItemView {
   private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
     const targetFile = this.app.vault
       .getFiles()
-      .find((f) => f.basename === file.basename);
+      .find((f) => f.path === file.path);
 
     if (targetFile) {
       let leaf = this.app.workspace.getMostRecentLeaf();
@@ -152,7 +151,7 @@ class RecentFilesListView extends ItemView {
     } else {
       new Notice('Cannot find a file with that name');
       this.data.recentFiles = this.data.recentFiles.filter(
-        (fp) => fp.basename !== file.basename,
+        (fp) => fp.path !== file.path,
       );
       this.plugin.saveData();
       this.redraw();
