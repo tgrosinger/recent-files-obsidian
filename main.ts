@@ -1,14 +1,13 @@
-import { notDeepStrictEqual } from 'assert';
 import {
   addIcon,
   App,
-  EventRef,
   ItemView,
   Menu,
   Notice,
   Plugin,
   PluginSettingTab,
   Setting,
+  TAbstractFile,
   TFile,
   WorkspaceLeaf,
 } from 'obsidian';
@@ -182,6 +181,8 @@ export default class RecentFilesPlugin extends Plugin {
       this.registerEvent(this.app.workspace.on('layout-ready', this.initView));
     }
 
+    this.registerEvent(this.app.vault.on('rename', this.handleRename));
+
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
 
@@ -224,6 +225,25 @@ export default class RecentFilesPlugin extends Plugin {
       active: true,
     });
   };
+
+  private readonly handleRename = async (
+    file: TAbstractFile,
+    oldPath: string,
+  ): Promise<void> => {
+    const entry = this.data.recentFiles.find(
+      (recentFile) => recentFile.path === oldPath,
+    );
+    if (entry) {
+      entry.path = file.path;
+      entry.basename = this.trimExtension(file.name);
+      this.view.redraw();
+      await this.saveData();
+    }
+  };
+
+  // trimExtension can be used to turn a filename into a basename when
+  // interacting with a TAbstractFile that does not have a basename property.
+  private readonly trimExtension = (name: string): string => name.split('.')[0];
 }
 
 class RecentFilesSettingTab extends PluginSettingTab {
