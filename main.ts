@@ -107,7 +107,9 @@ class RecentFilesListView extends ItemView {
         text: currentFile.basename,
       });
 
-      navFile.onClickEvent(() => this.focusFile(currentFile));
+      navFile.onClickEvent((event) =>
+        this.focusFile(currentFile, event.ctrlKey || event.metaKey),
+      );
     });
 
     const contentEl = this.containerEl.children[1];
@@ -136,13 +138,17 @@ class RecentFilesListView extends ItemView {
     this.redraw();
   };
 
-  private readonly focusFile = (file: FilePath): void => {
+  private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
     const targetFile = this.app.vault
       .getFiles()
       .find((f) => f.basename === file.basename);
 
     if (targetFile) {
-      this.app.workspace.getMostRecentLeaf().openFile(targetFile);
+      let leaf = this.app.workspace.getMostRecentLeaf();
+      if (shouldSplit) {
+        leaf = this.app.workspace.createLeafBySplit(leaf);
+      }
+      leaf.openFile(targetFile);
     } else {
       new Notice('Cannot find a file with that name');
       this.data.recentFiles = this.data.recentFiles.filter(
