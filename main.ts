@@ -182,6 +182,7 @@ export default class RecentFilesPlugin extends Plugin {
     }
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
+    this.registerEvent(this.app.vault.on('delete', this.handleDelete));
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
@@ -236,6 +237,20 @@ export default class RecentFilesPlugin extends Plugin {
     if (entry) {
       entry.path = file.path;
       entry.basename = this.trimExtension(file.name);
+      this.view.redraw();
+      await this.saveData();
+    }
+  };
+
+  private readonly handleDelete = async (
+    file: TAbstractFile,
+  ): Promise<void> => {
+    const beforeLen = this.data.recentFiles.length;
+    this.data.recentFiles = this.data.recentFiles.filter(
+      (recentFile) => recentFile.path !== file.path,
+    );
+
+    if (beforeLen !== this.data.recentFiles.length) {
       this.view.redraw();
       await this.saveData();
     }
