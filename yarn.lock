@@ -1168,9 +1168,9 @@ object.values@^1.1.1:
     es-abstract "^1.18.0-next.1"
     has "^1.0.3"
 
-"obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master":
-  version "0.10.6"
-  resolved "https://github.com/obsidianmd/obsidian-api/tarball/master#e5fc147f060653e67d3bba74267d7adbd6af7b27"
+"obsidian@https://github.com/obsidianmd/obsidian-api/archive/master.tar.gz":
+  version "0.11.0"
+  resolved "https://github.com/obsidianmd/obsidian-api/archive/master.tar.gz#9dba02cab0cc8365c5545eee5c43e12f5911a8cc"
   dependencies:
     "@types/codemirror" "0.0.98"
 
