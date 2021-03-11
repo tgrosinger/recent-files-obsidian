@@ -167,7 +167,6 @@ export default class RecentFilesPlugin extends Plugin {
 
     await this.loadData();
 
-    addIcon('clock', clockIcon);
     addIcon('sweep', sweepIcon);
 
     this.registerView(
@@ -347,12 +346,6 @@ const createDonateButton = (link: string, img: HTMLElement): HTMLElement => {
   a.appendChild(img);
   return a;
 };
-
-const clockIcon = `
-<svg fill="currentColor" stroke="currentColor" version="1.1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <path d="m368 394.67c-4.0977 0-8.1914-1.5586-11.309-4.6953l-112-112c-3.0078-3.0078-4.6914-7.082-4.6914-11.305v-149.34c0-8.832 7.168-16 16-16s16 7.168 16 16v142.7l107.31 107.31c6.25 6.25 6.25 16.383 0 22.633-3.1172 3.1367-7.2109 4.6953-11.309 4.6953z"/>
-  <ellipse cx="259.25" cy="258.17" rx="245.77" ry="244.68" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="25"/>
-</svg>`;
 
 const sweepIcon = `
 <svg fill="currentColor" stroke="currentColor" version="1.1" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
