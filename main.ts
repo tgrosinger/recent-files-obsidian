@@ -210,10 +210,21 @@ export default class RecentFilesPlugin extends Plugin {
     await this.saveData();
   };
 
-  public readonly shouldAddFile = (file: FilePath): boolean =>
-    this.data.omittedPaths
-      .filter((path) => path.length > 0) // Ignore empty lines
-      .find((omittedPath) => file.path.startsWith(omittedPath)) === undefined;
+  public readonly shouldAddFile = (file: FilePath): boolean => {
+    const patterns: string[] = this.data.omittedPaths.filter((path) => path.length > 0)
+    const fileMatchesRegex = (pattern: string): boolean => {
+      try {
+        const re = new RegExp(pattern);
+        const doesMatch: boolean = re.test(file.path);
+        return doesMatch;
+      } catch (err) {
+        // console.log(err);
+        return false;
+      }
+    }
+    const shouldAdd: boolean = !(patterns.some(fileMatchesRegex));
+    return shouldAdd;
+  };
 
   private readonly initView = (): void => {
     if (this.app.workspace.getLeavesOfType(RecentFilesListViewType).length) {
@@ -270,24 +281,31 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
   public display(): void {
     const { containerEl } = this;
-
     containerEl.empty();
-
     containerEl.createEl('h2', { text: 'Recent Files List' });
 
+    const fragment = document.createDocumentFragment();
+    const link = document.createElement('a');
+    link.href = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
+    link.text = 'MDN - Regular expressions';
+    fragment.append('RegExp patterns to ignore. One pattern per line. See ');
+    fragment.append(link);
+    fragment.append(' for help.');
+
     new Setting(containerEl)
-      .setName('Omitted paths')
-      .setDesc('File path prefixes to ignore. One path per line.')
-      .addTextArea((textArea) =>
+      .setName('Omitted pathname patterns')
+      .setDesc(fragment)
+      .addTextArea((textArea) => {
+        textArea.inputEl.setAttr('rows', 6);
         textArea
-          .setPlaceholder('daily/')
+          .setPlaceholder('^daily/\n\\.png$\nfoobar.*baz')
           .setValue(this.plugin.data.omittedPaths.join('\n'))
           .onChange(async (value) => {
             this.plugin.data.omittedPaths = value.split('\n');
             this.plugin.pruneOmittedFiles();
             this.plugin.view.redraw();
-          }),
-      );
+          });
+      });
 
     new Setting(containerEl)
       .setName('List length')
