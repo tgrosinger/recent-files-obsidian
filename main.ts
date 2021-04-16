@@ -105,6 +105,19 @@ class RecentFilesListView extends ItemView {
         text: currentFile.basename,
       });
 
+      navFile.setAttr('draggable', 'true');
+      navFile.addEventListener('dragstart', (event: DragEvent) => {
+        const file = this.app.metadataCache.getFirstLinkpathDest(
+          currentFile.path,
+          '',
+        );
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dragManager = (this.app as any).dragManager;
+        const dragData = dragManager.dragFile(event, file);
+        dragManager.onDragStart(event, dragData);
+      });
+
       navFile.onClickEvent((event) =>
         this.focusFile(currentFile, event.ctrlKey || event.metaKey),
       );
