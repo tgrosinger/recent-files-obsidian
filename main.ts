@@ -136,6 +136,13 @@ class RecentFilesListView extends ItemView {
     this.redraw();
   };
 
+  /**
+   * Open the provided file in the most recent leaf.
+   *
+   * @param shouldSplit Whether the file should be opened in a new split, or in
+   * the most recent split. If the most recent split is pinned, this is set to
+   * true.
+   */
   private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
     const targetFile = this.app.vault
       .getFiles()
@@ -143,7 +150,9 @@ class RecentFilesListView extends ItemView {
 
     if (targetFile) {
       let leaf = this.app.workspace.getMostRecentLeaf();
-      if (shouldSplit) {
+
+      const createLeaf = shouldSplit || leaf.getViewState().pinned;
+      if (createLeaf) {
         leaf = this.app.workspace.createLeafBySplit(leaf);
       }
       leaf.openFile(targetFile);
