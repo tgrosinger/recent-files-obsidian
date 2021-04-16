@@ -172,7 +172,7 @@ export default class RecentFilesPlugin extends Plugin {
   public view: RecentFilesListView;
 
   public async onload(): Promise<void> {
-    console.log('loading plugin');
+    console.log('Recent Files: Loading plugin');
 
     await this.loadData();
 
@@ -220,19 +220,18 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   public readonly shouldAddFile = (file: FilePath): boolean => {
-    const patterns: string[] = this.data.omittedPaths.filter((path) => path.length > 0)
+    const patterns: string[] = this.data.omittedPaths.filter(
+      (path) => path.length > 0,
+    );
     const fileMatchesRegex = (pattern: string): boolean => {
       try {
-        const re = new RegExp(pattern);
-        const doesMatch: boolean = re.test(file.path);
-        return doesMatch;
+        return new RegExp(pattern).test(file.path);
       } catch (err) {
-        // console.log(err);
+        console.error('Recent Files: Invalid regex pattern: ' + pattern);
         return false;
       }
-    }
-    const shouldAdd: boolean = !(patterns.some(fileMatchesRegex));
-    return shouldAdd;
+    };
+    return !patterns.some(fileMatchesRegex);
   };
 
   private readonly initView = (): void => {
@@ -295,7 +294,8 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
     const fragment = document.createDocumentFragment();
     const link = document.createElement('a');
-    link.href = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
+    link.href =
+      'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
     link.text = 'MDN - Regular expressions';
     fragment.append('RegExp patterns to ignore. One pattern per line. See ');
     fragment.append(link);
