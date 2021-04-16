@@ -10,6 +10,3 @@ yarn-cache
 # build
 main.js
 *.js.map
-
-# luckman212
-backups/
