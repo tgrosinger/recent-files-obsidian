@@ -322,11 +322,12 @@ class RecentFilesSettingTab extends PluginSettingTab {
         textArea
           .setPlaceholder('^daily/\n\\.png$\nfoobar.*baz')
           .setValue(this.plugin.data.omittedPaths.join('\n'))
-          .onChange(async (value) => {
-            this.plugin.data.omittedPaths = value.split('\n');
-            this.plugin.pruneOmittedFiles();
-            this.plugin.view.redraw();
-          });
+        textArea.inputEl.onblur = (e: FocusEvent) => {
+          const patterns = String((e.target as HTMLInputElement).value);
+          this.plugin.data.omittedPaths = patterns.split('\n');
+          this.plugin.pruneOmittedFiles();
+          this.plugin.view.redraw();
+        };
       });
 
     new Setting(containerEl)
@@ -343,11 +344,14 @@ class RecentFilesSettingTab extends PluginSettingTab {
               new Notice('Invalid value set for List length setting');
               return;
             }
-
-            this.plugin.data.maxLength = parsed;
-            this.plugin.pruneLength();
-            this.plugin.view.redraw();
           });
+        text.inputEl.onblur = (e: FocusEvent) => {
+          const maxfiles = String((e.target as HTMLInputElement).value);
+          const parsed = parseInt(maxfiles, 10);
+          this.plugin.data.maxLength = parsed;
+          this.plugin.pruneLength();
+          this.plugin.view.redraw();
+        };
       });
 
     const div = containerEl.createEl('div', {
