@@ -294,7 +294,9 @@ export default class RecentFilesPlugin extends Plugin {
 
   // trimExtension can be used to turn a filename into a basename when
   // interacting with a TAbstractFile that does not have a basename property.
-  private readonly trimExtension = (name: string): string => name.split('.')[0];
+  // private readonly trimExtension = (name: string): string => name.split('.')[0];
+  // from: https://stackoverflow.com/a/4250408/617864
+  private readonly trimExtension = (name: string): string => name.replace(/\.[^/.]+$/, '');
 }
 
 class RecentFilesSettingTab extends PluginSettingTab {
