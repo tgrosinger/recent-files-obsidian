@@ -23,10 +23,12 @@ interface RecentFilesData {
   maxLength: number;
 }
 
+const defaultMaxLength: number = 50;
+
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  maxLength: 50,
+  maxLength: null
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -185,7 +187,7 @@ export default class RecentFilesPlugin extends Plugin {
   public view: RecentFilesListView;
 
   public async onload(): Promise<void> {
-    console.log('Recent Files: Loading plugin');
+    console.log('Recent Files: Loading plugin v' + this.manifest.version);
 
     await this.loadData();
 
@@ -210,6 +212,9 @@ export default class RecentFilesPlugin extends Plugin {
 
   public async loadData(): Promise<void> {
     this.data = Object.assign(DEFAULT_DATA, await super.loadData());
+    if (!this.data.maxLength) {
+      console.log('Recent Files: maxLength is not set, using default (' + defaultMaxLength.toString() + ')');
+    }
   }
 
   public async saveData(): Promise<void> {
@@ -222,7 +227,7 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   public readonly pruneLength = async (): Promise<void> => {
-    const toRemove = this.data.recentFiles.length - this.data.maxLength;
+    const toRemove = this.data.recentFiles.length - (this.data.maxLength || defaultMaxLength);
     if (toRemove > 0) {
       this.data.recentFiles.splice(
         this.data.recentFiles.length - toRemove,
@@ -335,13 +340,13 @@ class RecentFilesSettingTab extends PluginSettingTab {
       .setDesc('Maximum number of filenames to keep in the list.')
       .addText((text) => {
         text.inputEl.setAttr('type', 'number');
-        text.inputEl.setAttr('placeholder', '50');
+        text.inputEl.setAttr('placeholder', defaultMaxLength);
         text
-          .setValue(this.plugin.data.maxLength.toString())
+          .setValue(this.plugin.data.maxLength?.toString())
           .onChange((value) => {
             const parsed = parseInt(value, 10);
-            if (!parsed || parsed < 0) {
-              new Notice('Invalid value set for List length setting');
+            if (!Number.isNaN(parsed) && parsed <= 0) {
+              new Notice('List length must be a positive integer');
               return;
             }
           });
