@@ -321,9 +321,9 @@ class RecentFilesSettingTab extends PluginSettingTab {
         textArea.inputEl.setAttr('rows', 6);
         textArea
           .setPlaceholder('^daily/\n\\.png$\nfoobar.*baz')
-          .setValue(this.plugin.data.omittedPaths.join('\n'))
+          .setValue(this.plugin.data.omittedPaths.join('\n'));
         textArea.inputEl.onblur = (e: FocusEvent) => {
-          const patterns = String((e.target as HTMLInputElement).value);
+          const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedPaths = patterns.split('\n');
           this.plugin.pruneOmittedFiles();
           this.plugin.view.redraw();
@@ -346,7 +346,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
             }
           });
         text.inputEl.onblur = (e: FocusEvent) => {
-          const maxfiles = String((e.target as HTMLInputElement).value);
+          const maxfiles = (e.target as HTMLInputElement).value;
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
           this.plugin.pruneLength();
