@@ -5,6 +5,12 @@ Optionally include paths of files which should be excluded from the list.
 
 That's all there is to it!
 
+As with the file explorer view, you can:
+
+* Click items to open, ctrl-click to open in a new pane, right-click for a menu
+* Drag items to an editor to drop a link, to a header to open in a specific pane, or to a file explorer folder to move the file
+* Hover or ctrl-hover to view a content preview (as configured by the "Recent Files" toggle in the "Page Preview" settings)
+
 ## Screenshots
 
 ![sidebar](https://raw.githubusercontent.com/tgrosinger/recent-files-obsidian/main/resources/screenshots/sidebar.png)

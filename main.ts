@@ -120,9 +120,27 @@ class RecentFilesListView extends ItemView {
         dragManager.onDragStart(event, dragData);
       });
 
-      navFile.onClickEvent((event) =>
-        this.focusFile(currentFile, event.ctrlKey || event.metaKey),
-      );
+      navFile.addEventListener('mouseover', (event: MouseEvent) => {
+        this.app.workspace.trigger('hover-link', {
+          event,
+          source: RecentFilesListViewType,
+          hoverParent: rootEl,
+          targetEl: navFile,
+          linktext: currentFile.path
+        });
+      });
+
+      navFile.addEventListener('contextmenu', (event: MouseEvent) => {
+        const menu = new Menu(this.app);
+        const file = this.app.vault.getAbstractFileByPath(currentFile.path);
+        this.app.workspace.trigger("file-menu", menu, file, "link-context-menu", this.leaf);
+        menu.showAtPosition({x: event.clientX, y: event.clientY});
+      });
+
+      navFile.addEventListener('click', (event: MouseEvent) => {
+        this.focusFile(currentFile, event.ctrlKey || event.metaKey)
+      });
+
     });
 
     const contentEl = this.containerEl.children[1];
@@ -198,6 +216,11 @@ export default class RecentFilesPlugin extends Plugin {
       (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
     );
 
+    (this.app.workspace as any).registerHoverLinkSource(RecentFilesListViewType, {
+      display: 'Recent Files',
+      defaultMod: true,
+    });
+
     if (this.app.workspace.layoutReady) {
       this.initView();
     } else {
@@ -208,6 +231,10 @@ export default class RecentFilesPlugin extends Plugin {
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
+  }
+
+  public onunload() {
+    (this.app.workspace as any).unregisterHoverLinkSource(RecentFilesListViewType);
   }
 
   public async loadData(): Promise<void> {
@@ -252,12 +279,17 @@ export default class RecentFilesPlugin extends Plugin {
     return !patterns.some(fileMatchesRegex);
   };
 
-  private readonly initView = (): void => {
-    if (this.app.workspace.getLeavesOfType(RecentFilesListViewType).length) {
-      return;
+  private readonly initView = async (): Promise<void> => {
+    let leaf : WorkspaceLeaf = null;
+    for(leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
+      if (leaf.view instanceof RecentFilesListView) return;
+      // The view instance was created by an older version of the plugin,
+      // so clear it and recreate it (so it'll be the new version).
+      // This avoids the need to reload Obsidian to update the plugin.
+      await leaf.setViewState({type: "empty"});
+      break;
     }
-
-    this.app.workspace.getLeftLeaf(false).setViewState({
+    (leaf ?? this.app.workspace.getLeftLeaf(false)).setViewState({
       type: RecentFilesListViewType,
       active: true,
     });
