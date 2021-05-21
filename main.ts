@@ -28,7 +28,7 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  maxLength: null
+  maxLength: null,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -126,21 +126,26 @@ class RecentFilesListView extends ItemView {
           source: RecentFilesListViewType,
           hoverParent: rootEl,
           targetEl: navFile,
-          linktext: currentFile.path
+          linktext: currentFile.path,
         });
       });
 
       navFile.addEventListener('contextmenu', (event: MouseEvent) => {
         const menu = new Menu(this.app);
         const file = this.app.vault.getAbstractFileByPath(currentFile.path);
-        this.app.workspace.trigger("file-menu", menu, file, "link-context-menu", this.leaf);
-        menu.showAtPosition({x: event.clientX, y: event.clientY});
+        this.app.workspace.trigger(
+          'file-menu',
+          menu,
+          file,
+          'link-context-menu',
+          this.leaf,
+        );
+        menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
 
       navFile.addEventListener('click', (event: MouseEvent) => {
-        this.focusFile(currentFile, event.ctrlKey || event.metaKey)
+        this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
-
     });
 
     const contentEl = this.containerEl.children[1];
@@ -216,10 +221,14 @@ export default class RecentFilesPlugin extends Plugin {
       (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
     );
 
-    (this.app.workspace as any).registerHoverLinkSource(RecentFilesListViewType, {
-      display: 'Recent Files',
-      defaultMod: true,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.app.workspace as any).registerHoverLinkSource(
+      RecentFilesListViewType,
+      {
+        display: 'Recent Files',
+        defaultMod: true,
+      },
+    );
 
     if (this.app.workspace.layoutReady) {
       this.initView();
@@ -233,14 +242,21 @@ export default class RecentFilesPlugin extends Plugin {
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
 
-  public onunload() {
-    (this.app.workspace as any).unregisterHoverLinkSource(RecentFilesListViewType);
+  public onunload(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.app.workspace as any).unregisterHoverLinkSource(
+      RecentFilesListViewType,
+    );
   }
 
   public async loadData(): Promise<void> {
     this.data = Object.assign(DEFAULT_DATA, await super.loadData());
     if (!this.data.maxLength) {
-      console.log('Recent Files: maxLength is not set, using default (' + defaultMaxLength.toString() + ')');
+      console.log(
+        'Recent Files: maxLength is not set, using default (' +
+          defaultMaxLength.toString() +
+          ')',
+      );
     }
   }
 
@@ -254,7 +270,8 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   public readonly pruneLength = async (): Promise<void> => {
-    const toRemove = this.data.recentFiles.length - (this.data.maxLength || defaultMaxLength);
+    const toRemove =
+      this.data.recentFiles.length - (this.data.maxLength || defaultMaxLength);
     if (toRemove > 0) {
       this.data.recentFiles.splice(
         this.data.recentFiles.length - toRemove,
@@ -280,13 +297,13 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   private readonly initView = async (): Promise<void> => {
-    let leaf : WorkspaceLeaf = null;
-    for(leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
+    let leaf: WorkspaceLeaf = null;
+    for (leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
       if (leaf.view instanceof RecentFilesListView) return;
       // The view instance was created by an older version of the plugin,
       // so clear it and recreate it (so it'll be the new version).
       // This avoids the need to reload Obsidian to update the plugin.
-      await leaf.setViewState({type: "empty"});
+      await leaf.setViewState({ type: 'empty' });
       break;
     }
     (leaf ?? this.app.workspace.getLeftLeaf(false)).setViewState({
@@ -328,7 +345,8 @@ export default class RecentFilesPlugin extends Plugin {
   // interacting with a TAbstractFile that does not have a basename property.
   // private readonly trimExtension = (name: string): string => name.split('.')[0];
   // from: https://stackoverflow.com/a/4250408/617864
-  private readonly trimExtension = (name: string): string => name.replace(/\.[^/.]+$/, '');
+  private readonly trimExtension = (name: string): string =>
+    name.replace(/\.[^/.]+$/, '');
 }
 
 class RecentFilesSettingTab extends PluginSettingTab {
