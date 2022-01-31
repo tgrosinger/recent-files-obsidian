@@ -221,6 +221,20 @@ export default class RecentFilesPlugin extends Plugin {
       (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
     );
 
+    this.addCommand({
+      id: 'recent-files-open',
+      name: 'Open',
+      callback: async () => {
+        let [leaf] = this.app.workspace.getLeavesOfType(RecentFilesListViewType);
+        if (!leaf) {
+          leaf = this.app.workspace.getLeftLeaf(false);
+          await leaf.setViewState({ type: RecentFilesListViewType });
+        }
+
+        this.app.workspace.revealLeaf(leaf);
+      }
+    });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.app.workspace as any).registerHoverLinkSource(
       RecentFilesListViewType,
