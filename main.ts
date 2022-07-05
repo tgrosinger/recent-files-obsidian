@@ -138,7 +138,6 @@ class RecentFilesListView extends ItemView {
           menu,
           file,
           'link-context-menu',
-          this.leaf,
         );
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
