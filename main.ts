@@ -46,6 +46,9 @@ class RecentFilesListView extends ItemView {
 
     this.plugin = plugin;
     this.data = data;
+  }
+
+  public async onOpen(): Promise<void> {
     this.redraw();
   }
 
