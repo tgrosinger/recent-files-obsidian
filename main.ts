@@ -46,6 +46,9 @@ class RecentFilesListView extends ItemView {
 
     this.plugin = plugin;
     this.data = data;
+  }
+
+  public async onOpen(): Promise<void> {
     this.redraw();
   }
 
@@ -138,7 +141,6 @@ class RecentFilesListView extends ItemView {
           menu,
           file,
           'link-context-menu',
-          this.leaf,
         );
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
