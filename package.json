@@ -24,7 +24,7 @@
     "eslint-plugin-jsdoc": "30.7.3",
     "eslint-plugin-prefer-arrow": "1.2.2",
     "eslint-plugin-simple-import-sort": "5.0.3",
-    "obsidian": "https://github.com/obsidianmd/obsidian-api/archive/bbd5525cba2e0aefc27c87b378805c155ae8d5b1.tar.gz",
+    "obsidian": "https://github.com/obsidianmd/obsidian-api/archive/1b4f6e2e5753c8ac2d538bc5d55c38f228450cb2.tar.gz",
     "rollup": "^2.32.1",
     "tslib": "^2.0.3",
     "typescript": "^4.0.3"
