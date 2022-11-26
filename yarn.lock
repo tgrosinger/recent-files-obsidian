@@ -1113,10 +1113,10 @@ mkdirp@^0.5.1:
   dependencies:
     minimist "^1.2.5"
 
-moment@2.29.1:
-  version "2.29.1"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.1.tgz#b2be769fa31940be9eeea6469c075e35006fa3d3"
-  integrity sha512-kHmoybcPV8Sqy59DwNDY3Jefr64lK/by/da0ViFcuA4DH0vQg5Q6Ze5VimxkfQNSC+Mls/Kx53s7TjP1RhFEDQ==
+moment@2.29.4:
+  version "2.29.4"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
+  integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
 ms@2.0.0:
   version "2.0.0"
@@ -1173,13 +1173,12 @@ object.values@^1.1.1:
     es-abstract "^1.18.0-next.1"
     has "^1.0.3"
 
-"obsidian@https://github.com/obsidianmd/obsidian-api/archive/bbd5525cba2e0aefc27c87b378805c155ae8d5b1.tar.gz":
-  version "0.11.13"
-  resolved "https://github.com/obsidianmd/obsidian-api/archive/bbd5525cba2e0aefc27c87b378805c155ae8d5b1.tar.gz#05d7d2b9aea1f59fd2d6b606bbd773512383d4d0"
+"obsidian@https://github.com/obsidianmd/obsidian-api/archive/1b4f6e2e5753c8ac2d538bc5d55c38f228450cb2.tar.gz":
+  version "0.16.3"
+  resolved "https://github.com/obsidianmd/obsidian-api/archive/1b4f6e2e5753c8ac2d538bc5d55c38f228450cb2.tar.gz#9e5b9e6d0b06be97347ff55612dc52913a2b6a26"
   dependencies:
     "@types/codemirror" "0.0.108"
-    moment "2.29.1"
-    yaml "2.0.0-4"
+    moment "2.29.4"
 
 once@^1.3.0:
   version "1.4.0"
@@ -1612,8 +1611,3 @@ yallist@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
-
-yaml@2.0.0-4:
-  version "2.0.0-4"
-  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.0.0-4.tgz#0b8089fecd1843d1a8eb8d0aff1470c471653e15"
-  integrity sha512-MoQoNhTFI400tkaeod+X0Vety1KD2L9dUa6pa1CVcyfcATjC/iDxoMLvqZ6U3D8c5KzxBrU2HnJH+PfaXOqI7w==
