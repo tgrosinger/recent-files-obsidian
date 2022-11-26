@@ -1,10 +1,10 @@
 import {
   addIcon,
   App,
+  getIcon,
   ItemView,
   Menu,
   Notice,
-  PaneType,
   Plugin,
   PluginSettingTab,
   Setting,
@@ -101,8 +101,8 @@ class RecentFilesListView extends ItemView {
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
     this.data.recentFiles.forEach((currentFile) => {
-      const navFile = childrenEl.createDiv({ cls: 'nav-file' });
-      const navFileTitle = navFile.createDiv({ cls: 'nav-file-title' });
+      const navFile = childrenEl.createDiv({ cls: 'nav-file recent-files-file' });
+      const navFileTitle = navFile.createDiv({ cls: 'recent-files-file-title' });
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
@@ -113,8 +113,8 @@ class RecentFilesListView extends ItemView {
         text: currentFile.basename,
       });
 
-      navFile.setAttr('draggable', 'true');
-      navFile.addEventListener('dragstart', (event: DragEvent) => {
+      navFileTitle.setAttr('draggable', 'true');
+      navFileTitle.addEventListener('dragstart', (event: DragEvent) => {
         const file = this.app.metadataCache.getFirstLinkpathDest(
           currentFile.path,
           '',
@@ -126,7 +126,7 @@ class RecentFilesListView extends ItemView {
         dragManager.onDragStart(event, dragData);
       });
 
-      navFile.addEventListener('mouseover', (event: MouseEvent) => {
+      navFileTitle.addEventListener('mouseover', (event: MouseEvent) => {
         this.app.workspace.trigger('hover-link', {
           event,
           source: RecentFilesListViewType,
@@ -136,7 +136,7 @@ class RecentFilesListView extends ItemView {
         });
       });
 
-      navFile.addEventListener('contextmenu', (event: MouseEvent) => {
+      navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
         const menu = new Menu(this.app);
         const file = this.app.vault.getAbstractFileByPath(currentFile.path);
         this.app.workspace.trigger(
@@ -148,15 +148,29 @@ class RecentFilesListView extends ItemView {
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
 
-      navFile.addEventListener('click', (event: MouseEvent) => {
+      navFileTitle.addEventListener('click', (event: MouseEvent) => {
         this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
+
+      const navFileDelete = navFile.createDiv({ cls: 'recent-files-file-delete' })
+      navFileDelete.appendChild(getIcon("lucide-x"));
+      navFileDelete.addEventListener('click', async () => {
+        await this.removeFile(currentFile);
+        this.redraw();
+      })
     });
 
     const contentEl = this.containerEl.children[1];
     contentEl.empty();
     contentEl.appendChild(rootEl);
   };
+
+  private readonly removeFile = async (file: FilePath): Promise<void> => {
+    this.data.recentFiles = this.data.recentFiles.filter(
+      (currFile) => currFile.path !== file.path,
+    );
+    await this.plugin.pruneLength(); // Handles the save
+  }
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     this.data.recentFiles = this.data.recentFiles.filter(
