@@ -102,16 +102,14 @@ class RecentFilesListView extends ItemView {
 
     this.data.recentFiles.forEach((currentFile) => {
       const navFile = childrenEl.createDiv({ cls: 'nav-file recent-files-file' });
-      const navFileTitle = navFile.createDiv({ cls: 'recent-files-file-title' });
+      const navFileTitle = navFile.createDiv({ cls: 'nav-file-title recent-files-title' })
+      const navFileTitleContent = navFileTitle.createDiv({ cls: 'nav-file-title-content recent-files-title-content' })
+
+      navFileTitleContent.setText(currentFile.basename)
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
       }
-
-      navFileTitle.createDiv({
-        cls: 'nav-file-title-content',
-        text: currentFile.basename,
-      });
 
       navFileTitle.setAttr('draggable', 'true');
       navFileTitle.addEventListener('dragstart', (event: DragEvent) => {
@@ -148,11 +146,11 @@ class RecentFilesListView extends ItemView {
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
 
-      navFileTitle.addEventListener('click', (event: MouseEvent) => {
+      navFileTitleContent.addEventListener('click', (event: MouseEvent) => {
         this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
 
-      const navFileDelete = navFile.createDiv({ cls: 'recent-files-file-delete' })
+      const navFileDelete = navFileTitle.createDiv({ cls: 'recent-files-file-delete' })
       navFileDelete.appendChild(getIcon("lucide-x"));
       navFileDelete.addEventListener('click', async () => {
         await this.removeFile(currentFile);
@@ -292,8 +290,8 @@ export default class RecentFilesPlugin extends Plugin {
     if (!this.data.maxLength) {
       console.log(
         'Recent Files: maxLength is not set, using default (' +
-          defaultMaxLength.toString() +
-          ')',
+        defaultMaxLength.toString() +
+        ')',
       );
     }
   }
@@ -450,24 +448,24 @@ class RecentFilesSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-    .setName("Open note in")
-    .setDesc("Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).")
-    .addDropdown((dropdown) => {
-      const options: Record<string, string> = {
-        "tab": "tab",
-        "split": "split",
-        "window": "window",
-      };
+      .setName("Open note in")
+      .setDesc("Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).")
+      .addDropdown((dropdown) => {
+        const options: Record<string, string> = {
+          "tab": "tab",
+          "split": "split",
+          "window": "window",
+        };
 
-      dropdown
-        .addOptions(options)
-        .setValue(this.plugin.data.openType)
-        .onChange(async (value) => {
-          this.plugin.data.openType = value;
-          await this.plugin.saveData();
-          this.display();
-        });
-    });
+        dropdown
+          .addOptions(options)
+          .setValue(this.plugin.data.openType)
+          .onChange(async (value) => {
+            this.plugin.data.openType = value;
+            await this.plugin.saveData();
+            this.display();
+          });
+      });
 
     const div = containerEl.createEl('div', {
       cls: 'recent-files-donation',
@@ -476,7 +474,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-        'continued development, please use the buttons below:',
+      'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
