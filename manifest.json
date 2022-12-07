@@ -6,5 +6,6 @@
   "description": "List files by most recently opened",
   "author": "Tony Grosinger",
   "authorUrl": "https://grosinger.net",
-  "isDesktopOnly": false
+  "isDesktopOnly": false,
+  "donation": "https://buymeacoffee.com/tgrosinger"
 }
