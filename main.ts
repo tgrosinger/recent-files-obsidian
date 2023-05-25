@@ -101,9 +101,9 @@ class RecentFilesListView extends ItemView {
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
     this.data.recentFiles.forEach((currentFile) => {
-      const navFile = childrenEl.createDiv({ cls: 'nav-file recent-files-file' });
-      const navFileTitle = navFile.createDiv({ cls: 'nav-file-title recent-files-title' })
-      const navFileTitleContent = navFileTitle.createDiv({ cls: 'nav-file-title-content recent-files-title-content' })
+      const navFile = childrenEl.createDiv({ cls: 'tree-item nav-file recent-files-file' });
+      const navFileTitle = navFile.createDiv({ cls: 'tree-item-self is-clickable nav-file-title recent-files-title' })
+      const navFileTitleContent = navFileTitle.createDiv({ cls: 'tree-item-inner nav-file-title-content recent-files-title-content' })
 
       navFileTitleContent.setText(currentFile.basename)
 
