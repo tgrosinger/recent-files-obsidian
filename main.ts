@@ -150,7 +150,7 @@ class RecentFilesListView extends ItemView {
         this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
 
-      const navFileDelete = navFileTitle.createDiv({ cls: 'recent-files-file-delete' })
+      const navFileDelete = navFileTitle.createDiv({ cls: 'recent-files-file-delete menu-item-icon' })
       navFileDelete.appendChild(getIcon("lucide-x"));
       navFileDelete.addEventListener('click', async () => {
         await this.removeFile(currentFile);
