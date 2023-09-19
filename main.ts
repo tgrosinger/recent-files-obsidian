@@ -15,6 +15,8 @@ import {
   WorkspaceLeaf,
 } from 'obsidian';
 
+import { getApiSafe } from 'front-matter-plugin-api-provider';
+
 interface FilePath {
   path: string;
   basename: string;
@@ -99,6 +101,16 @@ class RecentFilesListView extends ItemView {
     const rootEl = createDiv({ cls: 'nav-folder mod-root' });
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
+    // Add support for the Front Matter Title plugin (https://github.com/snezhig/obsidian-front-matter-title)
+    // Get the plugin's safe API and check if the plugin is enabled.
+    // If the plugin is not installed, this will not create an error.
+    const frontMatterApi = getApiSafe(this.app);
+    // We query the "explorer" feature because it is the closest in form to this plugin's features.
+    const frontMatterEnabled = frontMatterApi && frontMatterApi.getEnabledFeatures().contains('explorer');
+    const frontMatterResolver = frontMatterEnabled
+      ? frontMatterApi.getResolverFactory()?.createResolver('explorer')
+      : null;
+
     this.data.recentFiles.forEach((currentFile) => {
       const navFile = childrenEl.createDiv({
         cls: 'tree-item nav-file recent-files-file',
@@ -110,7 +122,11 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
       });
 
-      navFileTitleContent.setText(currentFile.basename);
+      // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
+      const title = frontMatterResolver
+        ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
+        : currentFile.basename;
+      navFileTitleContent.setText(title);
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');

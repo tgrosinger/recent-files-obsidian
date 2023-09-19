@@ -15,6 +15,10 @@ As with the file explorer view, you can:
 
 ![sidebar](https://raw.githubusercontent.com/tgrosinger/recent-files-obsidian/main/resources/screenshots/sidebar.png)
 
+## Other Plugin Support
+
+If you use the [Front Matter Title plugin](https://github.com/snezhig/obsidian-front-matter-title), enable the explorer module to name files in the Recent Files sidebar from the note frontmatter title.
+
 ## Pricing
 
 This plugin is provided to everyone for free, however if you would like to
