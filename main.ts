@@ -101,11 +101,17 @@ class RecentFilesListView extends ItemView {
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
 
     this.data.recentFiles.forEach((currentFile) => {
-      const navFile = childrenEl.createDiv({ cls: 'tree-item nav-file recent-files-file' });
-      const navFileTitle = navFile.createDiv({ cls: 'tree-item-self is-clickable nav-file-title recent-files-title' })
-      const navFileTitleContent = navFileTitle.createDiv({ cls: 'tree-item-inner nav-file-title-content recent-files-title-content' })
+      const navFile = childrenEl.createDiv({
+        cls: 'tree-item nav-file recent-files-file',
+      });
+      const navFileTitle = navFile.createDiv({
+        cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
+      });
+      const navFileTitleContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
+      });
 
-      navFileTitleContent.setText(currentFile.basename)
+      navFileTitleContent.setText(currentFile.basename);
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
@@ -150,12 +156,14 @@ class RecentFilesListView extends ItemView {
         this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
 
-      const navFileDelete = navFileTitle.createDiv({ cls: 'recent-files-file-delete menu-item-icon' })
-      navFileDelete.appendChild(getIcon("lucide-x"));
+      const navFileDelete = navFileTitle.createDiv({
+        cls: 'recent-files-file-delete menu-item-icon',
+      });
+      navFileDelete.appendChild(getIcon('lucide-x'));
       navFileDelete.addEventListener('click', async () => {
         await this.removeFile(currentFile);
         this.redraw();
-      })
+      });
     });
 
     const contentEl = this.containerEl.children[1];
@@ -168,7 +176,7 @@ class RecentFilesListView extends ItemView {
       (currFile) => currFile.path !== file.path,
     );
     await this.plugin.pruneLength(); // Handles the save
-  }
+  };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     this.data.recentFiles = this.data.recentFiles.filter(
@@ -208,12 +216,13 @@ class RecentFilesListView extends ItemView {
 
       const createLeaf = shouldSplit || leaf.getViewState().pinned;
       if (createLeaf) {
-        if (this.plugin.data.openType == 'split')
+        if (this.plugin.data.openType === 'split') {
           leaf = this.app.workspace.getLeaf('split');
-        else if (this.plugin.data.openType == 'window')
+        } else if (this.plugin.data.openType === 'window') {
           leaf = this.app.workspace.getLeaf('window');
-        else
+        } else {
           leaf = this.app.workspace.getLeaf('tab');
+        }
       }
       leaf.openFile(targetFile);
     } else {
@@ -247,14 +256,16 @@ export default class RecentFilesPlugin extends Plugin {
       id: 'recent-files-open',
       name: 'Open',
       callback: async () => {
-        let [leaf] = this.app.workspace.getLeavesOfType(RecentFilesListViewType);
+        let [leaf] = this.app.workspace.getLeavesOfType(
+          RecentFilesListViewType,
+        );
         if (!leaf) {
           leaf = this.app.workspace.getLeftLeaf(false);
           await leaf.setViewState({ type: RecentFilesListViewType });
         }
 
         this.app.workspace.revealLeaf(leaf);
-      }
+      },
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -290,8 +301,8 @@ export default class RecentFilesPlugin extends Plugin {
     if (!this.data.maxLength) {
       console.log(
         'Recent Files: maxLength is not set, using default (' +
-        defaultMaxLength.toString() +
-        ')',
+          defaultMaxLength.toString() +
+          ')',
       );
     }
   }
@@ -448,13 +459,15 @@ class RecentFilesSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Open note in")
-      .setDesc("Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).")
+      .setName('Open note in')
+      .setDesc(
+        'Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).',
+      )
       .addDropdown((dropdown) => {
         const options: Record<string, string> = {
-          "tab": "tab",
-          "split": "split",
-          "window": "window",
+          tab: 'tab',
+          split: 'split',
+          window: 'window',
         };
 
         dropdown
@@ -474,7 +487,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-      'continued development, please use the buttons below:',
+        'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
