@@ -67,7 +67,7 @@ class RecentFilesListView extends ItemView {
     return 'clock';
   }
 
-  public onHeaderMenu(menu: Menu): void {
+  public onPaneMenu(menu: Menu): void {
     menu
       .addItem((item) => {
         item
@@ -141,7 +141,7 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
-        const menu = new Menu(this.app);
+        const menu = new Menu();
         const file = this.app.vault.getAbstractFileByPath(currentFile.path);
         this.app.workspace.trigger(
           'file-menu',
@@ -280,7 +280,9 @@ export default class RecentFilesPlugin extends Plugin {
     if (this.app.workspace.layoutReady) {
       this.initView();
     } else {
-      this.registerEvent(this.app.workspace.on('layout-ready', this.initView));
+      this.registerEvent(
+        this.app.workspace.on('layout-ready', this.initView, this),
+      );
     }
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
