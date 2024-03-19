@@ -149,7 +149,22 @@ class RecentFilesListView extends ItemView {
           file,
           'link-context-menu',
         );
+        menu.addItem((item) =>
+          item
+            .setTitle('Open in new tab')
+            .setIcon('file-plus')
+            .onClick(() => {
+              this.focusFile(currentFile, false, true);
+            })
+        );
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
+      });
+
+      navFileTitleContent.addEventListener('mousedown', (event: MouseEvent) => {
+        if(event.button == 1) {
+          event.preventDefault();
+          this.focusFile(currentFile, false, true);
+        }
       });
 
       navFileTitleContent.addEventListener('click', (event: MouseEvent) => {
@@ -206,7 +221,7 @@ class RecentFilesListView extends ItemView {
    * the most recent split. If the most recent split is pinned, this is set to
    * true.
    */
-  private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
+  private readonly focusFile = (file: FilePath, shouldSplit = false, newTab = false): void => {
     const targetFile = this.app.vault
       .getFiles()
       .find((f) => f.path === file.path);
@@ -214,14 +229,18 @@ class RecentFilesListView extends ItemView {
     if (targetFile) {
       let leaf = this.app.workspace.getMostRecentLeaf();
 
-      const createLeaf = shouldSplit || leaf.getViewState().pinned;
-      if (createLeaf) {
-        if (this.plugin.data.openType === 'split') {
-          leaf = this.app.workspace.getLeaf('split');
-        } else if (this.plugin.data.openType === 'window') {
-          leaf = this.app.workspace.getLeaf('window');
-        } else {
-          leaf = this.app.workspace.getLeaf('tab');
+      if (newTab == true) {
+        leaf = this.app.workspace.getLeaf('tab');
+      } else {
+        const createLeaf = shouldSplit || leaf.getViewState().pinned;
+        if (createLeaf) {
+          if (this.plugin.data.openType === 'split') {
+            leaf = this.app.workspace.getLeaf('split');
+          } else if (this.plugin.data.openType === 'window') {
+            leaf = this.app.workspace.getLeaf('window');
+          } else {
+            leaf = this.app.workspace.getLeaf('tab');
+          }
         }
       }
       leaf.openFile(targetFile);
