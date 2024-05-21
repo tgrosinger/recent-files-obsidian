@@ -1,7 +1,6 @@
 import {
   addIcon,
   App,
-  getIcon,
   ItemView,
   Keymap,
   Menu,
@@ -9,6 +8,7 @@ import {
   PaneType,
   Plugin,
   PluginSettingTab,
+  setIcon,
   Setting,
   TAbstractFile,
   TFile,
@@ -37,7 +37,7 @@ const RecentFilesListViewType = 'recent-files';
 
 class RecentFilesListView extends ItemView {
   private readonly plugin: RecentFilesPlugin;
-  private data: RecentFilesData;
+  private readonly data: RecentFilesData;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -175,8 +175,10 @@ class RecentFilesListView extends ItemView {
       const navFileDelete = navFileTitle.createDiv({
         cls: 'recent-files-file-delete menu-item-icon',
       });
-      navFileDelete.appendChild(getIcon('lucide-x'));
-      navFileDelete.addEventListener('click', async () => {
+      setIcon(navFileDelete, 'lucide-x');
+      navFileDelete.addEventListener('click', async (event) => {
+        event.stopPropagation();
+
         await this.removeFile(currentFile);
         this.redraw();
       });
@@ -259,15 +261,18 @@ export default class RecentFilesPlugin extends Plugin {
       id: 'recent-files-open',
       name: 'Open',
       callback: async () => {
-        let [leaf] = this.app.workspace.getLeavesOfType(
+        let leaf: WorkspaceLeaf | null;
+        [leaf] = this.app.workspace.getLeavesOfType(
           RecentFilesListViewType,
         );
         if (!leaf) {
           leaf = this.app.workspace.getLeftLeaf(false);
-          await leaf.setViewState({ type: RecentFilesListViewType });
+          await leaf?.setViewState({ type: RecentFilesListViewType });
         }
 
-        this.app.workspace.revealLeaf(leaf);
+        if (leaf) {
+          this.app.workspace.revealLeaf(leaf);
+        }
       },
     });
 
@@ -342,7 +347,7 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   private readonly initView = async (): Promise<void> => {
-    let leaf: WorkspaceLeaf = null;
+    let leaf: WorkspaceLeaf | null = null;
     for (leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
       if (leaf.view instanceof RecentFilesListView) return;
       // The view instance was created by an older version of the plugin,
@@ -351,7 +356,7 @@ export default class RecentFilesPlugin extends Plugin {
       await leaf.setViewState({ type: 'empty' });
       break;
     }
-    (leaf ?? this.app.workspace.getLeftLeaf(false)).setViewState({
+    (leaf ?? this.app.workspace.getLeftLeaf(false))?.setViewState({
       type: RecentFilesListViewType,
       active: true,
     });
