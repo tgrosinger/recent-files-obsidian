@@ -141,6 +141,15 @@ class RecentFilesListView extends ItemView {
 
       navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
         const menu = new Menu();
+        menu.addItem((item) =>
+          item
+            .setSection('action')
+            .setTitle('Open in new tab')
+            .setIcon('file-plus')
+            .onClick(() => {
+              this.focusFile(currentFile, 'tab');
+            })
+        );
         const file = this.app.vault.getAbstractFileByPath(currentFile.path);
         this.app.workspace.trigger(
           'file-menu',
@@ -154,6 +163,13 @@ class RecentFilesListView extends ItemView {
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
         const newLeaf = Keymap.isModEvent(event)
         this.focusFile(currentFile, newLeaf);
+      });
+
+      navFileTitleContent.addEventListener('mousedown', (event: MouseEvent) => {
+        if (event.button === 1) {
+          event.preventDefault();
+          this.focusFile(currentFile, 'tab');
+        }
       });
 
       const navFileDelete = navFileTitle.createDiv({
