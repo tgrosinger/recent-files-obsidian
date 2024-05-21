@@ -291,8 +291,8 @@ export default class RecentFilesPlugin extends Plugin {
     if (!this.data.maxLength) {
       console.log(
         'Recent Files: maxLength is not set, using default (' +
-          defaultMaxLength.toString() +
-          ')',
+        defaultMaxLength.toString() +
+        ')',
       );
     }
   }
@@ -455,7 +455,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-        'continued development, please use the buttons below:',
+      'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
