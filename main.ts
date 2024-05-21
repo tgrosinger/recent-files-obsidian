@@ -285,13 +285,9 @@ export default class RecentFilesPlugin extends Plugin {
       },
     );
 
-    if (this.app.workspace.layoutReady) {
+    this.app.workspace.onLayoutReady(() => {
       this.initView();
-    } else {
-      this.registerEvent(
-        this.app.workspace.on('layout-ready', this.initView, this),
-      );
-    }
+    });
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
