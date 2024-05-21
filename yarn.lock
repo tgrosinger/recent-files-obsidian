@@ -1427,10 +1427,9 @@ object.values@^1.1.7:
     define-properties "^1.2.0"
     es-abstract "^1.22.1"
 
-"obsidian@https://github.com/obsidianmd/obsidian-api/archive/bbb696aeb8bf5126bf2ecbf84fc8284fe133bc20.tar.gz":
-  version "1.5.1"
-  resolved "https://github.com/obsidianmd/obsidian-api/archive/bbb696aeb8bf5126bf2ecbf84fc8284fe133bc20.tar.gz"
-  integrity sha512-uiknnv8AU8VK+AeckF2DeAPIhHQPvXoaZJVVIbjiU3Bn+TB6vA+MZLr6sE96Zwf2tZ/f5JtkVaTffmkFP0Q7Mg==
+"obsidian@https://github.com/obsidianmd/obsidian-api/archive/8b2eda0f24285636c8aa116972643e5233a23dc1.tar.gz":
+  version "1.5.7"
+  resolved "https://github.com/obsidianmd/obsidian-api/archive/8b2eda0f24285636c8aa116972643e5233a23dc1.tar.gz#ae12a11e04d5a6657891548268e4746e156236ec"
   dependencies:
     "@types/codemirror" "5.60.8"
     moment "2.29.4"
