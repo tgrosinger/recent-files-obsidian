@@ -23,7 +23,7 @@ interface FilePath {
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
-  maxLength: number;
+  maxLength?: number;
 }
 
 const defaultMaxLength: number = 50;
@@ -31,7 +31,6 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  maxLength: null,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -288,13 +287,6 @@ export default class RecentFilesPlugin extends Plugin {
 
   public async loadData(): Promise<void> {
     this.data = Object.assign(DEFAULT_DATA, await super.loadData());
-    if (!this.data.maxLength) {
-      console.log(
-        'Recent Files: maxLength is not set, using default (' +
-        defaultMaxLength.toString() +
-        ')',
-      );
-    }
   }
 
   public async saveData(): Promise<void> {
@@ -431,7 +423,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
         text.inputEl.setAttr('type', 'number');
         text.inputEl.setAttr('placeholder', defaultMaxLength);
         text
-          .setValue(this.plugin.data.maxLength?.toString())
+          .setValue(this.plugin.data.maxLength?.toString() || '')
           .onChange((value) => {
             const parsed = parseInt(value, 10);
             if (!Number.isNaN(parsed) && parsed <= 0) {
