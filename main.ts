@@ -3,8 +3,10 @@ import {
   App,
   getIcon,
   ItemView,
+  Keymap,
   Menu,
   Notice,
+  PaneType,
   Plugin,
   PluginSettingTab,
   Setting,
@@ -22,7 +24,6 @@ interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
   maxLength: number;
-  openType: string;
 }
 
 const defaultMaxLength: number = 50;
@@ -31,7 +32,6 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   maxLength: null,
-  openType: 'tab',
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -153,7 +153,8 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
-        this.focusFile(currentFile, event.ctrlKey || event.metaKey);
+        const newLeaf = Keymap.isModEvent(event)
+        this.focusFile(currentFile, newLeaf);
       });
 
       const navFileDelete = navFileTitle.createDiv({
@@ -204,24 +205,13 @@ class RecentFilesListView extends ItemView {
    * the most recent split. If the most recent split is pinned, this is set to
    * true.
    */
-  private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
+  private readonly focusFile = (file: FilePath, newLeaf: boolean | PaneType): void => {
     const targetFile = this.app.vault
       .getFiles()
       .find((f) => f.path === file.path);
 
     if (targetFile) {
-      let leaf = this.app.workspace.getMostRecentLeaf();
-
-      const createLeaf = shouldSplit || leaf.getViewState().pinned;
-      if (createLeaf) {
-        if (this.plugin.data.openType === 'split') {
-          leaf = this.app.workspace.getLeaf('split');
-        } else if (this.plugin.data.openType === 'window') {
-          leaf = this.app.workspace.getLeaf('window');
-        } else {
-          leaf = this.app.workspace.getLeaf('tab');
-        }
-      }
+      const leaf = this.app.workspace.getLeaf(newLeaf);
       leaf.openFile(targetFile);
     } else {
       new Notice('Cannot find a file with that name');
@@ -456,28 +446,6 @@ class RecentFilesSettingTab extends PluginSettingTab {
           this.plugin.pruneLength();
           this.plugin.view.redraw();
         };
-      });
-
-    new Setting(containerEl)
-      .setName('Open note in')
-      .setDesc(
-        'Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).',
-      )
-      .addDropdown((dropdown) => {
-        const options: Record<string, string> = {
-          tab: 'tab',
-          split: 'split',
-          window: 'window',
-        };
-
-        dropdown
-          .addOptions(options)
-          .setValue(this.plugin.data.openType)
-          .onChange(async (value) => {
-            this.plugin.data.openType = value;
-            await this.plugin.saveData();
-            this.display();
-          });
       });
 
     const div = containerEl.createEl('div', {
