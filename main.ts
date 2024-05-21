@@ -166,9 +166,7 @@ class RecentFilesListView extends ItemView {
       });
     });
 
-    const contentEl = this.containerEl.children[1];
-    contentEl.empty();
-    contentEl.appendChild(rootEl);
+    this.containerEl.setChildrenInPlace([rootEl]);
   };
 
   private readonly removeFile = async (file: FilePath): Promise<void> => {
