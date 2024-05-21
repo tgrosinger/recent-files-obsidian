@@ -152,7 +152,7 @@ class RecentFilesListView extends ItemView {
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
 
-      navFileTitleContent.addEventListener('click', (event: MouseEvent) => {
+      navFileTitle.addEventListener('click', (event: MouseEvent) => {
         this.focusFile(currentFile, event.ctrlKey || event.metaKey);
       });
 
