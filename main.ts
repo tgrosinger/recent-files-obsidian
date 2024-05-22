@@ -118,6 +118,8 @@ class RecentFilesListView extends ItemView {
 
       navFileTitle.setAttr('draggable', 'true');
       navFileTitle.addEventListener('dragstart', (event: DragEvent) => {
+        if (!currentFile?.path) return;
+
         const file = this.app.metadataCache.getFirstLinkpathDest(
           currentFile.path,
           '',
@@ -130,6 +132,8 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('mouseover', (event: MouseEvent) => {
+        if (!currentFile?.path) return;
+
         this.app.workspace.trigger('hover-link', {
           event,
           source: RecentFilesListViewType,
@@ -140,6 +144,8 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
+        if (!currentFile?.path) return;
+
         const menu = new Menu();
         menu.addItem((item) =>
           item
@@ -150,7 +156,7 @@ class RecentFilesListView extends ItemView {
               this.focusFile(currentFile, 'tab');
             })
         );
-        const file = this.app.vault.getAbstractFileByPath(currentFile.path);
+        const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
           'file-menu',
           menu,
@@ -161,11 +167,15 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
+        if (!currentFile) return;
+
         const newLeaf = Keymap.isModEvent(event)
         this.focusFile(currentFile, newLeaf);
       });
 
       navFileTitleContent.addEventListener('mousedown', (event: MouseEvent) => {
+        if (!currentFile) return;
+
         if (event.button === 1) {
           event.preventDefault();
           this.focusFile(currentFile, 'tab');
