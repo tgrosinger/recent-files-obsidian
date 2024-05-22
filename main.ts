@@ -217,10 +217,10 @@ class RecentFilesListView extends ItemView {
   };
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
-    // Work around race condition. This doesn't seem to be an issue specifically
-    // with this plugin, but this plugin can trigger it.
-    // Discussion: https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
-    await sleep(15);
+    // Attempt to work around an Electron bug around file access when closing BrowserWindows.
+    // https://github.com/electron/electron/issues/40607
+    // https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
+    await sleep(100);
 
     if (!openedFile || !this.plugin.shouldAddFile(openedFile)) {
       return;
