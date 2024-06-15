@@ -8,6 +8,7 @@ import {
   PaneType,
   Plugin,
   PluginSettingTab,
+  sanitizeHTMLToDom,
   setIcon,
   Setting,
   TAbstractFile,
@@ -15,15 +16,26 @@ import {
   WorkspaceLeaf,
 } from 'obsidian';
 
+// thx https://liamca.in/Obsidian/API+FAQ/third-party/use+momentjs
+import type moment from 'moment';
+declare global {
+  interface Window {
+    moment: typeof moment;
+  }
+}
+
 interface FilePath {
   path: string;
   basename: string;
+  time?: number;
 }
 
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
   maxLength?: number;
+  displayTimes?: boolean;
+  displayTimesFormat?: string;
 }
 
 const defaultMaxLength: number = 50;
@@ -31,6 +43,8 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
+  displayTimes: false,
+  displayTimesFormat: '',
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -106,11 +120,40 @@ class RecentFilesListView extends ItemView {
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
-      const navFileTitleContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
+      const navFileContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content recent-files-content'
+      });
+      const navFileTitleContent = navFileContent.createDiv({
+        cls: 'recent-files-title-content',
       });
 
       navFileTitleContent.setText(currentFile.basename);
+
+      if(currentFile.time) {
+        navFile.setAttr('data-time', currentFile.time);
+
+        if(window.moment(currentFile.time).isBetween(window.moment().startOf('hour'), window.moment())) navFile.addClass('recent-files-this-hour');
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('day'), window.moment())) navFile.addClass('recent-files-this-day');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().day(window.moment().day() - 1).startOf('day'), window.moment().startOf('day'))) navFile.addClass('recent-files-last-day');
+        
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('week'), window.moment())) navFile.addClass('recent-files-this-week');
+        else if(window.moment(currentFile.time).isBetween(window.moment().week(window.moment().week() - 1).startOf('week'), window.moment().startOf('week'))) navFile.addClass('recent-files-last-week');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('month'), window.moment())) navFile.addClass('recent-files-this-month');
+        else if(window.moment(currentFile.time).isBetween(window.moment().month(window.moment().month() - 1).startOf('month'), window.moment().startOf('month'))) navFile.addClass('recent-files-last-month');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('year'), window.moment())) navFile.addClass('recent-files-this-year');
+        else if(window.moment(currentFile.time).isBetween(window.moment().year(window.moment().year() - 1).startOf('year'), window.moment().startOf('year'))) navFile.addClass('recent-files-last-year');
+
+        if(this.data.displayTimes) {
+          const navFileTime = navFileContent.createDiv({
+            cls: 'recent-files-time-content'
+          });
+          if(this.data.displayTimesFormat && this.data.displayTimesFormat.trim() !== '') navFileTime.setText(window.moment(currentFile.time).format(this.data.displayTimesFormat));
+          else navFileTime.setText(window.moment(currentFile.time).fromNow());
+        }
+      }
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
@@ -211,6 +254,7 @@ class RecentFilesListView extends ItemView {
     this.data.recentFiles.unshift({
       basename: file.basename,
       path: file.path,
+      time: Date.now(),
     });
 
     await this.plugin.pruneLength(); // Handles the save
@@ -423,18 +467,20 @@ class RecentFilesSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.createEl('h2', { text: 'Recent Files List' });
 
-    const fragment = document.createDocumentFragment();
-    const link = document.createElement('a');
-    link.href =
-      'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
-    link.text = 'MDN - Regular expressions';
-    fragment.append('RegExp patterns to ignore. One pattern per line. See ');
-    fragment.append(link);
-    fragment.append(' for help.');
+    const omittedPathsDesc: DocumentFragment = sanitizeHTMLToDom(
+      'RegExp patterns to ignore. One pattern per line. See'
+      + ' <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern">'
+      + 'MDN - Regular expressions</a> for help.'
+    );
+
+    const timesFormatDesc: DocumentFragment = sanitizeHTMLToDom(
+      '<a href="https://momentjs.com/docs/#/displaying/format/">Moment.js format string</a> to use when displaying times.'
+      + '<br>Leave blank to use relative times, eg "4 hours ago"'
+    );
 
     new Setting(containerEl)
       .setName('Omitted pathname patterns')
-      .setDesc(fragment)
+      .setDesc(omittedPathsDesc)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
@@ -468,6 +514,30 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
           this.plugin.pruneLength();
+          this.plugin.view.redraw();
+        };
+      });
+
+    new Setting(containerEl)
+      .setName('Display times')
+      .setDesc('Display when a file was last accessed.')
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.data.displayTimes || false)
+          .onChange((value) => {
+            this.plugin.data.displayTimes = value;
+            this.plugin.view.redraw();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName('Display time format')
+      .setDesc(timesFormatDesc)
+      .addText((text) => {
+        text.setValue(this.plugin.data.displayTimesFormat || '');
+        text.inputEl.onblur = (e: FocusEvent) => {
+          const timesFormat = (e.target as HTMLInputElement).value;
+          this.plugin.data.displayTimesFormat = timesFormat;
           this.plugin.view.redraw();
         };
       });
