@@ -3,12 +3,21 @@
   align-items: unset;
 }
 
-.recent-files-title-content {
+.recent-files-content {
   flex-grow: 1;
+}
+
+.recent-files-time-content {
+  filter: brightness(1.2);
+}
+
+.theme-dark .recent-files-time-content {
+  filter: brightness(0.8);
 }
 
 .recent-files-file-delete {
   display: none;
+  align-items: center;
 }
 
 .recent-files-title:hover .recent-files-file-delete {
