@@ -98,7 +98,7 @@
 
 "@esbuild/linux-x64@0.21.3":
   version "0.21.3"
-  resolved "https://registry.yarnpkg.com/@esbuild/linux-x64/-/linux-x64-0.21.3.tgz#994d347e7f530c33628e35e48ccde8f299adbcb6"
+  resolved "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.21.3.tgz"
   integrity sha512-IOXOIm9WaK7plL2gMhsWJd+l2bfrhfilv0uPTptoRoSb2p09RghhQQp9YY6ZJhk/kqmeRt6siRdMSLLwzuT0KQ==
 
 "@esbuild/netbsd-x64@0.21.3":
@@ -665,7 +665,7 @@ es-to-primitive@^1.2.1:
 
 esbuild@0.21.3:
   version "0.21.3"
-  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.21.3.tgz#cbb10b100c768b0cfb35d61d9e70324553437c38"
+  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.21.3.tgz"
   integrity sha512-Kgq0/ZsAPzKrbOjCQcjoSmPoWhlcVnGAUo7jvaLHoxW1Drto0KGkR1xBNg2Cp43b9ImvxmPEJZ9xkfcnqPsfBw==
   optionalDependencies:
     "@esbuild/aix-ppc64" "0.21.3"
@@ -938,6 +938,13 @@ for-each@^0.3.3:
   integrity sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==
   dependencies:
     is-callable "^1.1.3"
+
+front-matter-plugin-api-provider@0.1.4-alpha:
+  version "0.1.4-alpha"
+  resolved "https://registry.npmjs.org/front-matter-plugin-api-provider/-/front-matter-plugin-api-provider-0.1.4-alpha.tgz"
+  integrity sha512-amv+xSnxY1VUCtNu1y+mr2QZSDBAktiaP67G1CF6LOYnW11fctTKro75rAzDEjW5EkdDwnM5PvJjBHB+IMSYzw==
+  dependencies:
+    obsidian "^1.2.8"
 
 fs.realpath@^1.0.0:
   version "1.0.0"
@@ -1427,9 +1434,10 @@ object.values@^1.1.7:
     define-properties "^1.2.0"
     es-abstract "^1.22.1"
 
-"obsidian@https://github.com/obsidianmd/obsidian-api/archive/8b2eda0f24285636c8aa116972643e5233a23dc1.tar.gz":
-  version "1.5.7"
-  resolved "https://github.com/obsidianmd/obsidian-api/archive/8b2eda0f24285636c8aa116972643e5233a23dc1.tar.gz#ae12a11e04d5a6657891548268e4746e156236ec"
+obsidian@^1.2.8, "obsidian@https://github.com/obsidianmd/obsidian-api/archive/df9434bec6883bd32727f61b1ed1336f7663d0e4.tar.gz":
+  version "1.6.6"
+  resolved "https://github.com/obsidianmd/obsidian-api/archive/df9434bec6883bd32727f61b1ed1336f7663d0e4.tar.gz"
+  integrity sha512-1WopEbouo1HHDdc6rEGAkpDyaEYe/qcjQI5bakEGRa+I6GY6oVp+tv6ejgZl0Xp0AavKXOfksaHObAfrV7yWvA==
   dependencies:
     "@types/codemirror" "5.60.8"
     moment "2.29.4"
