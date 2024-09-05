@@ -1,12 +1,14 @@
 import {
   addIcon,
   App,
-  getIcon,
   ItemView,
+  Keymap,
   Menu,
   Notice,
+  PaneType,
   Plugin,
   PluginSettingTab,
+  setIcon,
   Setting,
   TAbstractFile,
   TFile,
@@ -21,8 +23,7 @@ interface FilePath {
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
-  maxLength: number;
-  openType: string;
+  maxLength?: number;
 }
 
 const defaultMaxLength: number = 50;
@@ -30,15 +31,13 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  maxLength: null,
-  openType: 'tab',
 };
 
 const RecentFilesListViewType = 'recent-files';
 
 class RecentFilesListView extends ItemView {
   private readonly plugin: RecentFilesPlugin;
-  private data: RecentFilesData;
+  private readonly data: RecentFilesData;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -119,6 +118,8 @@ class RecentFilesListView extends ItemView {
 
       navFileTitle.setAttr('draggable', 'true');
       navFileTitle.addEventListener('dragstart', (event: DragEvent) => {
+        if (!currentFile?.path) return;
+
         const file = this.app.metadataCache.getFirstLinkpathDest(
           currentFile.path,
           '',
@@ -131,6 +132,8 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('mouseover', (event: MouseEvent) => {
+        if (!currentFile?.path) return;
+
         this.app.workspace.trigger('hover-link', {
           event,
           source: RecentFilesListViewType,
@@ -141,8 +144,19 @@ class RecentFilesListView extends ItemView {
       });
 
       navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
+        if (!currentFile?.path) return;
+
         const menu = new Menu();
-        const file = this.app.vault.getAbstractFileByPath(currentFile.path);
+        menu.addItem((item) =>
+          item
+            .setSection('action')
+            .setTitle('Open in new tab')
+            .setIcon('file-plus')
+            .onClick(() => {
+              this.focusFile(currentFile, 'tab');
+            })
+        );
+        const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
           'file-menu',
           menu,
@@ -152,23 +166,35 @@ class RecentFilesListView extends ItemView {
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
       });
 
-      navFileTitleContent.addEventListener('click', (event: MouseEvent) => {
-        this.focusFile(currentFile, event.ctrlKey || event.metaKey);
+      navFileTitle.addEventListener('click', (event: MouseEvent) => {
+        if (!currentFile) return;
+
+        const newLeaf = Keymap.isModEvent(event)
+        this.focusFile(currentFile, newLeaf);
+      });
+
+      navFileTitleContent.addEventListener('mousedown', (event: MouseEvent) => {
+        if (!currentFile) return;
+
+        if (event.button === 1) {
+          event.preventDefault();
+          this.focusFile(currentFile, 'tab');
+        }
       });
 
       const navFileDelete = navFileTitle.createDiv({
         cls: 'recent-files-file-delete menu-item-icon',
       });
-      navFileDelete.appendChild(getIcon('lucide-x'));
-      navFileDelete.addEventListener('click', async () => {
+      setIcon(navFileDelete, 'lucide-x');
+      navFileDelete.addEventListener('click', async (event) => {
+        event.stopPropagation();
+
         await this.removeFile(currentFile);
         this.redraw();
       });
     });
 
-    const contentEl = this.containerEl.children[1];
-    contentEl.empty();
-    contentEl.appendChild(rootEl);
+    this.contentEl.setChildrenInPlace([rootEl]);
   };
 
   private readonly removeFile = async (file: FilePath): Promise<void> => {
@@ -191,6 +217,11 @@ class RecentFilesListView extends ItemView {
   };
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
+    // Attempt to work around an Electron bug around file access when closing BrowserWindows.
+    // https://github.com/electron/electron/issues/40607
+    // https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
+    await sleep(100);
+
     if (!openedFile || !this.plugin.shouldAddFile(openedFile)) {
       return;
     }
@@ -206,24 +237,13 @@ class RecentFilesListView extends ItemView {
    * the most recent split. If the most recent split is pinned, this is set to
    * true.
    */
-  private readonly focusFile = (file: FilePath, shouldSplit = false): void => {
+  private readonly focusFile = (file: FilePath, newLeaf: boolean | PaneType): void => {
     const targetFile = this.app.vault
       .getFiles()
       .find((f) => f.path === file.path);
 
     if (targetFile) {
-      let leaf = this.app.workspace.getMostRecentLeaf();
-
-      const createLeaf = shouldSplit || leaf.getViewState().pinned;
-      if (createLeaf) {
-        if (this.plugin.data.openType === 'split') {
-          leaf = this.app.workspace.getLeaf('split');
-        } else if (this.plugin.data.openType === 'window') {
-          leaf = this.app.workspace.getLeaf('window');
-        } else {
-          leaf = this.app.workspace.getLeaf('tab');
-        }
-      }
+      const leaf = this.app.workspace.getLeaf(newLeaf);
       leaf.openFile(targetFile);
     } else {
       new Notice('Cannot find a file with that name');
@@ -256,15 +276,18 @@ export default class RecentFilesPlugin extends Plugin {
       id: 'recent-files-open',
       name: 'Open',
       callback: async () => {
-        let [leaf] = this.app.workspace.getLeavesOfType(
+        let leaf: WorkspaceLeaf | null;
+        [leaf] = this.app.workspace.getLeavesOfType(
           RecentFilesListViewType,
         );
         if (!leaf) {
           leaf = this.app.workspace.getLeftLeaf(false);
-          await leaf.setViewState({ type: RecentFilesListViewType });
+          await leaf?.setViewState({ type: RecentFilesListViewType });
         }
 
-        this.app.workspace.revealLeaf(leaf);
+        if (leaf) {
+          this.app.workspace.revealLeaf(leaf);
+        }
       },
     });
 
@@ -277,13 +300,9 @@ export default class RecentFilesPlugin extends Plugin {
       },
     );
 
-    if (this.app.workspace.layoutReady) {
+    this.app.workspace.onLayoutReady(() => {
       this.initView();
-    } else {
-      this.registerEvent(
-        this.app.workspace.on('layout-ready', this.initView, this),
-      );
-    }
+    });
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
@@ -300,13 +319,6 @@ export default class RecentFilesPlugin extends Plugin {
 
   public async loadData(): Promise<void> {
     this.data = Object.assign(DEFAULT_DATA, await super.loadData());
-    if (!this.data.maxLength) {
-      console.log(
-        'Recent Files: maxLength is not set, using default (' +
-          defaultMaxLength.toString() +
-          ')',
-      );
-    }
   }
 
   public async saveData(): Promise<void> {
@@ -351,7 +363,7 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   private readonly initView = async (): Promise<void> => {
-    let leaf: WorkspaceLeaf = null;
+    let leaf: WorkspaceLeaf | null = null;
     for (leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
       if (leaf.view instanceof RecentFilesListView) return;
       // The view instance was created by an older version of the plugin,
@@ -360,7 +372,7 @@ export default class RecentFilesPlugin extends Plugin {
       await leaf.setViewState({ type: 'empty' });
       break;
     }
-    (leaf ?? this.app.workspace.getLeftLeaf(false)).setViewState({
+    (leaf ?? this.app.workspace.getLeftLeaf(false))?.setViewState({
       type: RecentFilesListViewType,
       active: true,
     });
@@ -448,7 +460,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
         text.inputEl.setAttr('type', 'number');
         text.inputEl.setAttr('placeholder', defaultMaxLength);
         text
-          .setValue(this.plugin.data.maxLength?.toString())
+          .setValue(this.plugin.data.maxLength?.toString() || '')
           .onChange((value) => {
             const parsed = parseInt(value, 10);
             if (!Number.isNaN(parsed) && parsed <= 0) {
@@ -465,28 +477,6 @@ class RecentFilesSettingTab extends PluginSettingTab {
         };
       });
 
-    new Setting(containerEl)
-      .setName('Open note in')
-      .setDesc(
-        'Open the clicked recent file record in a new tab, split, or window (only works on the desktop app).',
-      )
-      .addDropdown((dropdown) => {
-        const options: Record<string, string> = {
-          tab: 'tab',
-          split: 'split',
-          window: 'window',
-        };
-
-        dropdown
-          .addOptions(options)
-          .setValue(this.plugin.data.openType)
-          .onChange(async (value) => {
-            this.plugin.data.openType = value;
-            await this.plugin.saveData();
-            this.display();
-          });
-      });
-
     const div = containerEl.createEl('div', {
       cls: 'recent-files-donation',
     });
@@ -494,7 +484,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-        'continued development, please use the buttons below:',
+      'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
