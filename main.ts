@@ -316,10 +316,6 @@ export default class RecentFilesPlugin extends Plugin {
       },
     );
 
-    this.app.workspace.onLayoutReady(() => {
-      this.initView();
-    });
-
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
 
@@ -378,21 +374,10 @@ export default class RecentFilesPlugin extends Plugin {
     return !patterns.some(fileMatchesRegex);
   };
 
-  private readonly initView = async (): Promise<void> => {
-    let leaf: WorkspaceLeaf | null = null;
-    for (leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
-      if (leaf.view instanceof RecentFilesListView) return;
-      // The view instance was created by an older version of the plugin,
-      // so clear it and recreate it (so it'll be the new version).
-      // This avoids the need to reload Obsidian to update the plugin.
-      await leaf.setViewState({ type: 'empty' });
-      break;
-    }
-    (leaf ?? this.app.workspace.getLeftLeaf(false))?.setViewState({
-      type: RecentFilesListViewType,
-      active: true,
-    });
-  };
+  public onUserEnable(): void {
+    // Open our view automatically only when the plugin is first enabled.
+    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true })
+  }
 
   private readonly handleRename = async (
     file: TAbstractFile,
