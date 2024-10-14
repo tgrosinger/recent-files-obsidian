@@ -25,6 +25,7 @@ interface FilePath {
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
+  omittedTags: string[];
   maxLength?: number;
 }
 
@@ -33,6 +34,7 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
+  omittedTags: [],
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -371,7 +373,15 @@ export default class RecentFilesPlugin extends Plugin {
         return false;
       }
     };
-    return !patterns.some(fileMatchesRegex);
+
+    const omittedTags: string[] = this.data.omittedTags.filter(
+      (tag) => tag.length > 0,
+    );
+    // If there are no tags, the frontmatter.tags property is missing.
+    const fileTags: string[] = this.app.metadataCache.getFileCache(file)?.frontmatter?.tags || [];
+    const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+
+    return !patterns.some(fileMatchesRegex) && !fileTags.some(tagMatch);
   };
 
   public onUserEnable(): void {
@@ -429,18 +439,18 @@ class RecentFilesSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.createEl('h2', { text: 'Recent Files List' });
 
-    const fragment = document.createDocumentFragment();
+    const patternFragment = document.createDocumentFragment();
     const link = document.createElement('a');
     link.href =
       'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
     link.text = 'MDN - Regular expressions';
-    fragment.append('RegExp patterns to ignore. One pattern per line. See ');
-    fragment.append(link);
-    fragment.append(' for help.');
+    patternFragment.append('RegExp patterns to ignore. One pattern per line. See ');
+    patternFragment.append(link);
+    patternFragment.append(' for help.');
 
     new Setting(containerEl)
       .setName('Omitted pathname patterns')
-      .setDesc(fragment)
+      .setDesc(patternFragment)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
@@ -449,6 +459,27 @@ class RecentFilesSettingTab extends PluginSettingTab {
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedPaths = patterns.split('\n');
+          this.plugin.pruneOmittedFiles();
+          this.plugin.view.redraw();
+        };
+      });
+
+
+    const tagFragment = document.createDocumentFragment();
+    tagFragment.append('Frontmatter tags patterns to ignore. One pattern' +
+      ' per line');
+
+    new Setting(containerEl)
+      .setName('Omitted frontmatter tags')
+      .setDesc(tagFragment)
+      .addTextArea((textArea) => {
+        textArea.inputEl.setAttr('rows', 6);
+        textArea
+          .setPlaceholder('daily\nignore')
+          .setValue(this.plugin.data.omittedTags.join('\n'));
+        textArea.inputEl.onblur = (e: FocusEvent) => {
+          const patterns = (e.target as HTMLInputElement).value;
+          this.plugin.data.omittedTags = patterns.split('\n');
           this.plugin.pruneOmittedFiles();
           this.plugin.view.redraw();
         };
