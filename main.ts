@@ -362,6 +362,7 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   public readonly shouldAddFile = (file: FilePath): boolean => {
+    // Matches for ignored Paths
     const patterns: string[] = this.data.omittedPaths.filter(
       (path) => path.length > 0,
     );
@@ -374,14 +375,27 @@ export default class RecentFilesPlugin extends Plugin {
       }
     };
 
-    const omittedTags: string[] = this.data.omittedTags.filter(
-      (tag) => tag.length > 0,
-    );
-    // If there are no tags, the frontmatter.tags property is missing.
-    const fileTags: string[] = this.app.metadataCache.getFileCache(file)?.frontmatter?.tags || [];
-    const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+    if (patterns.some(fileMatchesRegex)) {
+      return false
+    }
 
-    return !patterns.some(fileMatchesRegex) && !fileTags.some(tagMatch);
+    // Matches for ignored Tags
+    const tfile = this.app.vault.getFileByPath(file.path)
+    if (tfile) {
+      const omittedTags: string[] = this.data.omittedTags.filter(
+        (tag) => tag.length > 0,
+      );
+
+      // If there are no tags, the frontmatter.tags property is missing.
+      const fileTags: string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
+      const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+
+      if (fileTags.some(tagMatch)) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   public onUserEnable(): void {
