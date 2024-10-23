@@ -1,24 +1,35 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "types": [
+      "obsidian-typings"
+    ],
+    "paths": {
+      "obsidian-typings/implementations": [
+        "./node_modules/obsidian-typings/dist/implementations.d.ts",
+        "./node_modules/obsidian-typings/dist/implementations.cjs"
+      ]
+    },
     "inlineSourceMap": true,
     "inlineSources": true,
-    "module": "ESNext",
-    "target": "ES6",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2021",
     "allowJs": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
     "strictNullChecks": true,
     "lib": [
       "DOM",
-      "ES5",
-      "ES6",
-      "ES7"
+      "ES2021"
     ]
   },
   "include": [
-    "**/*.ts"
+    "./src/**/*.ts"
   ]
 }
