@@ -405,6 +405,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     // Matches for Bookmarks
     if (tfile && this.data.omitBookmarks) {
+      // @ts-ignore
       const bookmarkedFiles: BookmarkedFile[] = this.app.internalPlugins.plugins.bookmarks.instance.items;
       const bookmarkedPaths = bookmarkedFiles.map(({ path }) => ( path ));
 
