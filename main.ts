@@ -32,7 +32,7 @@ interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
   omittedTags: string[];
-  omitBookmarks: boolean
+  omitBookmarks: boolean;
   maxLength?: number;
 }
 
