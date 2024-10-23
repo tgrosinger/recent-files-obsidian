@@ -408,9 +408,7 @@ export default class RecentFilesPlugin extends Plugin {
     const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks')
     if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
       const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
-      const bookmarkedPaths = bookmarkedFiles.map(({ path }) => ( path ));
-
-      if (bookmarkedPaths.contains(tfile.path)) {
+      if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
         return false;
       }
     }
