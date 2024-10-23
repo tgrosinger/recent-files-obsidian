@@ -22,10 +22,17 @@ interface FilePath {
   basename: string;
 }
 
+interface BookmarkedFile {
+  ctime: number;
+  path: string;
+  type: string;
+}
+
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
   omittedTags: string[];
+  omitBookmarks: boolean;
   maxLength?: number;
 }
 
@@ -35,6 +42,7 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
+  omitBookmarks: false
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -395,6 +403,16 @@ export default class RecentFilesPlugin extends Plugin {
       }
     }
 
+    // Matches for Bookmarks
+    // @ts-ignore
+    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks')
+    if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
+      const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
+      if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -497,6 +515,19 @@ class RecentFilesSettingTab extends PluginSettingTab {
           this.plugin.view.redraw();
         };
       });
+
+    new Setting(containerEl)
+      .setName('Omit bookmarked files')
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.data.omitBookmarks)
+          .onChange((value) => {
+            this.plugin.data.omitBookmarks = value;
+            this.plugin.pruneOmittedFiles();
+            this.plugin.view.redraw();
+          });
+      }
+    );
 
     new Setting(containerEl)
       .setName('List length')
