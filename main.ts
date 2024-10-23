@@ -451,7 +451,6 @@ class RecentFilesSettingTab extends PluginSettingTab {
   public display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Recent Files List' });
 
     const patternFragment = document.createDocumentFragment();
     const link = document.createElement('a');
