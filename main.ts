@@ -118,7 +118,6 @@ class RecentFilesListView extends ItemView {
       const navFile = childrenEl.createDiv({
         cls: 'tree-item nav-file recent-files-file',
       });
-
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
@@ -132,6 +131,7 @@ class RecentFilesListView extends ItemView {
         : currentFile.basename;
 
       navFileTitleContent.setText(title);
+
       setTooltip(navFile, currentFile.path);
 
       if (openFile && currentFile.path === openFile.path) {
