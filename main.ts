@@ -9,6 +9,7 @@ import {
   Plugin,
   PluginSettingTab,
   setIcon,
+  setTooltip,
   Setting,
   TAbstractFile,
   TFile,
@@ -26,7 +27,6 @@ interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
   omittedTags: string[];
-  fullPath: boolean;
   maxLength?: number;
 }
 
@@ -36,7 +36,6 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
-  fullPath: false,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -119,6 +118,7 @@ class RecentFilesListView extends ItemView {
       const navFile = childrenEl.createDiv({
         cls: 'tree-item nav-file recent-files-file',
       });
+
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
@@ -126,17 +126,13 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
       });
 
-      let title = this.data.fullPath
-        // from: https://stackoverflow.com/a/4250408/617864
-        ? currentFile.path.replace(/\.[^/.]+$/, '')
+      // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
+      const title = frontMatterResolver
+        ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
         : currentFile.basename;
 
-      // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
-      if (frontMatterResolver) {
-        title = frontMatterResolver.resolve(currentFile.path) ?? title
-      }
-
       navFileTitleContent.setText(title);
+      setTooltip(navFile, currentFile.path);
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
@@ -505,19 +501,6 @@ class RecentFilesSettingTab extends PluginSettingTab {
           this.plugin.view.redraw();
         };
       });
-
-    new Setting(containerEl)
-      .setName('Display full file paths')
-      .addToggle((toggle) => {
-          toggle
-            .setValue(this.plugin.data.fullPath)
-            .onChange((value) => {
-              this.plugin.data.fullPath = value;
-              this.plugin.pruneOmittedFiles();
-              this.plugin.view.redraw();
-            });
-        }
-      );
 
     new Setting(containerEl)
       .setName('List length')
