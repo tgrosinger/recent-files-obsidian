@@ -419,10 +419,8 @@ export default class RecentFilesPlugin extends Plugin {
         }
       }
 
-      else if (Array.isArray(fileTags)) {
-        if (fileTags.some(tagMatch)) {
-          return false;
-        }
+      else if (fileTags.some(tagMatch)) {
+        return false;
       }
     }
 
