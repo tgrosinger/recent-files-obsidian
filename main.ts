@@ -349,6 +349,8 @@ export default class RecentFilesPlugin extends Plugin {
 
   public async onExternalSettingsChange(): Promise<void> {
     await this.loadData();
+    await this.pruneLength();
+    await this.pruneOmittedFiles();
     this.view.redraw();
   }
 
