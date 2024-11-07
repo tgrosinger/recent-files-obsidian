@@ -227,7 +227,7 @@ class RecentFilesListView extends ItemView {
     this.data.recentFiles = this.data.recentFiles.filter(
       (currFile) => currFile.path !== file.path,
     );
-    await this.plugin.pruneLength(); // Handles the save
+    await this.plugin.saveData();
   };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
