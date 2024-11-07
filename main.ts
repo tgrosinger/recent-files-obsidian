@@ -355,8 +355,11 @@ export default class RecentFilesPlugin extends Plugin {
   }
 
   public readonly pruneOmittedFiles = async (): Promise<void> => {
+    const lengthBefore = this.data.recentFiles.length;
     this.data.recentFiles = this.data.recentFiles.filter(this.shouldAddFile);
-    await this.saveData();
+    if (lengthBefore !== this.data.recentFiles.length) {
+      await this.saveData();
+    }
   };
 
   public readonly pruneLength = async (): Promise<void> => {
