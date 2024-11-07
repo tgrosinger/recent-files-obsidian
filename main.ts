@@ -231,15 +231,23 @@ class RecentFilesListView extends ItemView {
   };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
+    const lengthBefore = this.data.recentFiles.length;
     this.data.recentFiles = this.data.recentFiles.filter(
       (currFile) => currFile.path !== file.path,
     );
-    this.data.recentFiles.unshift({
-      basename: file.basename,
-      path: file.path,
-    });
+    let needsSave = lengthBefore !== this.data.recentFiles.length;
 
-    await this.plugin.pruneLength(); // Handles the save
+    if (this.plugin.shouldAddFile(file)) {
+      this.data.recentFiles.unshift({
+        basename: file.basename,
+        path: file.path,
+      });
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await this.plugin.pruneLength(); // Handles the save
+    }
   };
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
@@ -248,7 +256,7 @@ class RecentFilesListView extends ItemView {
     // https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
     await sleep(100);
 
-    if (!openedFile || !this.plugin.shouldAddFile(openedFile)) {
+    if (!openedFile) {
       return;
     }
 
