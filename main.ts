@@ -9,6 +9,7 @@ import {
   Plugin,
   PluginSettingTab,
   setIcon,
+  setTooltip,
   Setting,
   TAbstractFile,
   TFile,
@@ -136,7 +137,10 @@ class RecentFilesListView extends ItemView {
       const title = frontMatterResolver
         ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
         : currentFile.basename;
+
       navFileTitleContent.setText(title);
+
+      setTooltip(navFile, currentFile.path);
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
