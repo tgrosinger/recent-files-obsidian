@@ -394,11 +394,32 @@ export default class RecentFilesPlugin extends Plugin {
         (tag) => tag.length > 0,
       );
 
-      // If there are no tags, the frontmatter.tags property is missing.
-      const fileTags: string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
+      /*
+       Tag(s) may be rendered in one of two ways. If only one tag is
+       present, as a string:
+       ```yaml
+       tags: mytag
+       ```
+
+       or, if one or more tags are present, in an array:
+       ```yaml
+       tags:
+        - tag1
+        - tag2
+       ```
+
+       If there are no tags, the `frontmatter.tags` property is missing.
+      */
+      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
       const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
 
-      if (fileTags.some(tagMatch)) {
+      if (typeof fileTags === 'string') {
+        if (tagMatch(fileTags)) {
+          return false;
+        }
+      }
+
+      else if (fileTags.some(tagMatch)) {
         return false;
       }
     }
