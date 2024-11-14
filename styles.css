@@ -1,13 +1,11 @@
 .recent-files-title {
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: unset;
 }
 
-.recent-files-title-content {
-  flex-grow: 1;
-}
-
 .recent-files-file-delete {
+  justify-content: right;
+  flex-grow: 1;
   display: none;
 }
 

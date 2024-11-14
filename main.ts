@@ -130,7 +130,10 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
       const navFileTitleContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
+        cls: 'tree-item-inner nav-file-title-content',
+      });
+      const navFileTag = navFileTitle.createDiv({
+        cls: 'nav-file-tag'
       });
 
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
@@ -139,6 +142,13 @@ class RecentFilesListView extends ItemView {
         : currentFile.basename;
 
       navFileTitleContent.setText(title);
+
+      // from: https://stackoverflow.com/a/4250408/617864
+      const extensionMatch = currentFile.path.match(/\.[^/.]+$/)
+      if (extensionMatch && extensionMatch[0] !== '.md') {
+        // Use a substring to remove the . from the extension
+        navFileTag.setText(extensionMatch[0].substring(1))
+      }
 
       setTooltip(navFile, currentFile.path);
 
