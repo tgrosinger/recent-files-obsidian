@@ -101,11 +101,6 @@ class RecentFilesListView extends ItemView {
       });
   }
 
-  public load(): void {
-    super.load();
-    this.registerEvent(this.app.workspace.on('file-open', this.update));
-  }
-
   public readonly redraw = (): void => {
     const openFile = this.app.workspace.getActiveFile();
 
@@ -234,40 +229,6 @@ class RecentFilesListView extends ItemView {
     await this.plugin.saveData();
   };
 
-  private readonly updateData = async (file: TFile): Promise<void> => {
-    const lengthBefore = this.data.recentFiles.length;
-    this.data.recentFiles = this.data.recentFiles.filter(
-      (currFile) => currFile.path !== file.path,
-    );
-    let needsSave = lengthBefore !== this.data.recentFiles.length;
-
-    if (this.plugin.shouldAddFile(file)) {
-      this.data.recentFiles.unshift({
-        basename: file.basename,
-        path: file.path,
-      });
-      needsSave = true;
-    }
-
-    if (needsSave) {
-      await this.plugin.pruneLength(); // Handles the save
-    }
-  };
-
-  private readonly update = async (openedFile: TFile): Promise<void> => {
-    // Attempt to work around an Electron bug around file access when closing BrowserWindows.
-    // https://github.com/electron/electron/issues/40607
-    // https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
-    await sleep(100);
-
-    if (!openedFile) {
-      return;
-    }
-
-    await this.updateData(openedFile);
-    this.redraw();
-  };
-
   /**
    * Open the provided file in the most recent leaf.
    *
@@ -340,6 +301,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
+    this.registerEvent(this.app.workspace.on('file-open', this.update));
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
@@ -458,6 +420,40 @@ export default class RecentFilesPlugin extends Plugin {
     // Open our view automatically only when the plugin is first enabled.
     this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true })
   }
+
+  private readonly update = async (openedFile: TFile): Promise<void> => {
+    if (!openedFile) {
+      return;
+    }
+
+    await this.updateData(openedFile);
+
+    // Update the view if there is one.
+    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    if (leaf && leaf.view instanceof RecentFilesListView) {
+      leaf.view.redraw();
+    }
+  }
+
+  private readonly updateData = async (file: TFile): Promise<void> => {
+    const lengthBefore = this.data.recentFiles.length;
+    this.data.recentFiles = this.data.recentFiles.filter(
+      (currFile) => currFile.path !== file.path,
+    );
+    let needsSave = lengthBefore !== this.data.recentFiles.length;
+
+    if (this.shouldAddFile(file)) {
+      this.data.recentFiles.unshift({
+        basename: file.basename,
+        path: file.path,
+      });
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await this.pruneLength(); // Handles the save
+    }
+  };
 
   private readonly handleRename = async (
     file: TAbstractFile,
