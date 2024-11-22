@@ -560,8 +560,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
             this.plugin.pruneOmittedFiles();
             this.plugin.view.redraw();
           });
-      }
-    );
+      });
 
     new Setting(containerEl)
       .setName('List length')
