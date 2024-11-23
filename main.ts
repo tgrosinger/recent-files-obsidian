@@ -143,11 +143,10 @@ class RecentFilesListView extends ItemView {
 
       navFileTitleContent.setText(title);
 
-      // from: https://stackoverflow.com/a/4250408/617864
-      const extensionMatch = currentFile.path.match(/\.[^/.]+$/)
-      if (extensionMatch && extensionMatch[0] !== '.md') {
-        // Use a substring to remove the . from the extension
-        navFileTag.setText(extensionMatch[0].substring(1))
+      const tFile = this.app.vault.getFileByPath(currentFile.path);
+      const extension = tFile?.extension
+      if (extension && extension !== 'md') {
+        navFileTag.setText(extension)
       }
 
       setTooltip(navFile, currentFile.path);
