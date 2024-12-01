@@ -400,7 +400,6 @@ export default class RecentFilesPlugin extends Plugin {
         Though undocumented, passing an array into RegExp.test() works as it is
         coerced it into a string as described.
       */
-
       const tagMatchesRegex = (pattern: string): boolean => {
         try {
           return new RegExp(pattern).test(fileTags.toString());
