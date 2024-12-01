@@ -400,7 +400,17 @@ export default class RecentFilesPlugin extends Plugin {
         Though undocumented, passing an array into RegExp.test() works as it is
         coerced it into a string as described.
       */
-      if (omittedTags.some((tag => RegExp(tag).test(fileTags.toString())))) {
+
+      const tagMatchesRegex = (pattern: string): boolean => {
+        try {
+          return new RegExp(pattern).test(fileTags.toString());
+        } catch (err) {
+          console.error('Recent Files: Invalid regex pattern: ' + pattern);
+          return false;
+        }
+      };
+
+      if (omittedTags.some(tagMatchesRegex)) {
         return false;
       }
     }
