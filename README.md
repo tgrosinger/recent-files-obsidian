@@ -1,7 +1,7 @@
 # Recent Files for Obsidian
 
 This plugin displays a list of most recently opened files in the sidebar.
-Optionally include paths of files which should be excluded from the list.
+Optionally, exclude certain paths, frontmatter tags, or bookmarked files. 
 
 That's all there is to it!
 

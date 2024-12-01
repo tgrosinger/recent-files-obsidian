@@ -542,16 +542,16 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
 
     const tagFragment = document.createDocumentFragment();
-    tagFragment.append('Frontmatter tags patterns to ignore. One pattern' +
-      ' per line');
+    tagFragment.append('Frontmatter-tag patterns to ignore. One pattern' +
+      ' per line.');
 
     new Setting(containerEl)
-      .setName('Omitted frontmatter tags')
+      .setName('Omitted frontmatter-tag patterns')
       .setDesc(tagFragment)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
-          .setPlaceholder('daily\nignore')
+          .setPlaceholder('ignore\narchive/a/b')
           .setValue(this.plugin.data.omittedTags.join('\n'));
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
