@@ -43,7 +43,7 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
-  omitBookmarks: false
+  omitBookmarks: false,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -191,7 +191,7 @@ class RecentFilesListView extends ItemView {
             .setIcon('file-plus')
             .onClick(() => {
               this.focusFile(currentFile, 'tab');
-            })
+            }),
         );
         const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
@@ -206,7 +206,7 @@ class RecentFilesListView extends ItemView {
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
         if (!currentFile) return;
 
-        const newLeaf = Keymap.isModEvent(event)
+        const newLeaf = Keymap.isModEvent(event);
         this.focusFile(currentFile, newLeaf);
       });
 
@@ -375,11 +375,11 @@ export default class RecentFilesPlugin extends Plugin {
     };
 
     if (patterns.some(fileMatchesRegex)) {
-      return false
+      return false;
     }
 
     // Matches for ignored Tags
-    const tfile = this.app.vault.getFileByPath(file.path)
+    const tfile = this.app.vault.getFileByPath(file.path);
     if (tfile) {
       const omittedTags: string[] = this.data.omittedTags.filter(
         (tag) => tag.length > 0,
@@ -417,7 +417,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     // Matches for Bookmarks
     // @ts-ignore
-    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks')
+    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks');
     if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
       const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
       if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
@@ -430,7 +430,7 @@ export default class RecentFilesPlugin extends Plugin {
 
   public onUserEnable(): void {
     // Open our view automatically only when the plugin is first enabled.
-    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true })
+    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true });
   }
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
@@ -445,7 +445,7 @@ export default class RecentFilesPlugin extends Plugin {
     if (leaf && leaf.view instanceof RecentFilesListView) {
       leaf.view.redraw();
     }
-  }
+  };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     const lengthBefore = this.data.recentFiles.length;
