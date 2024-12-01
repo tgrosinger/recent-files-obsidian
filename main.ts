@@ -377,28 +377,30 @@ export default class RecentFilesPlugin extends Plugin {
        Tag(s) may be rendered in one of two ways. If only one tag is
        present, as a string:
        ```yaml
-       tags: mytag
+       tags: tag1
        ```
 
        or, if one or more tags are present, in an array:
        ```yaml
        tags:
         - tag1
-        - tag2
+        - journal/tag2
        ```
 
-       If there are no tags, the `frontmatter.tags` property is missing.
+       If there are no tags, the `frontmatter.tags` array is empty.
       */
-      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
-      const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags;
 
-      if (typeof fileTags === 'string') {
-        if (tagMatch(fileTags)) {
-          return false;
-        }
-      }
+      /*
+        Calling toString() here will flatten an array, or return the string.
+        i.e., ["tag1", "journal/tag2"] will become "tag1,journal/tag2"
 
-      else if (fileTags.some(tagMatch)) {
+        Thus, permitting a normal regex match.
+
+        Though undocumented, passing an array into RegExp.test() works as it is
+        coerced it into a string as described.
+      */
+      if (omittedTags.some((tag => RegExp(tag).test(fileTags.toString())))) {
         return false;
       }
     }
