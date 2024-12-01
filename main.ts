@@ -389,28 +389,39 @@ export default class RecentFilesPlugin extends Plugin {
        Tag(s) may be rendered in one of two ways. If only one tag is
        present, as a string:
        ```yaml
-       tags: mytag
+       tags: tag1
        ```
 
        or, if one or more tags are present, in an array:
        ```yaml
        tags:
         - tag1
-        - tag2
+        - journal/tag2
        ```
 
-       If there are no tags, the `frontmatter.tags` property is missing.
+       If there are no tags, the `frontmatter.tags` array is empty.
       */
-      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
-      const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags;
 
-      if (typeof fileTags === 'string') {
-        if (tagMatch(fileTags)) {
+      /*
+        Calling toString() here will flatten an array, or return the string.
+        i.e., ["tag1", "journal/tag2"] will become "tag1,journal/tag2"
+
+        Thus, permitting a normal regex match.
+
+        Though undocumented, passing an array into RegExp.test() works as it is
+        coerced it into a string as described.
+      */
+      const tagMatchesRegex = (pattern: string): boolean => {
+        try {
+          return new RegExp(pattern).test(fileTags.toString());
+        } catch (err) {
+          console.error('Recent Files: Invalid regex pattern: ' + pattern);
           return false;
         }
-      }
+      };
 
-      else if (fileTags.some(tagMatch)) {
+      if (omittedTags.some(tagMatchesRegex)) {
         return false;
       }
     }
@@ -543,16 +554,16 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
 
     const tagFragment = document.createDocumentFragment();
-    tagFragment.append('Frontmatter tags patterns to ignore. One pattern' +
-      ' per line');
+    tagFragment.append('Frontmatter-tag patterns to ignore. One pattern' +
+      ' per line.');
 
     new Setting(containerEl)
-      .setName('Omitted frontmatter tags')
+      .setName('Omitted frontmatter-tag patterns')
       .setDesc(tagFragment)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
-          .setPlaceholder('daily\nignore')
+          .setPlaceholder('ignore\narchive/a/b')
           .setValue(this.plugin.data.omittedTags.join('\n'));
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
