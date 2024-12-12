@@ -271,7 +271,7 @@ class RecentFilesListView extends ItemView {
 
 export default class RecentFilesPlugin extends Plugin {
   public data: RecentFilesData;
-  public view: RecentFilesListView;
+  public view: RecentFilesListView | undefined;
 
   public async onload(): Promise<void> {
     console.log('Recent Files: Loading plugin v' + this.manifest.version);
@@ -339,7 +339,7 @@ export default class RecentFilesPlugin extends Plugin {
     await this.loadData();
     await this.pruneLength();
     await this.pruneOmittedFiles();
-    this.view.redraw();
+    this.view?.redraw();
   }
 
   public readonly pruneOmittedFiles = async (): Promise<void> => {
@@ -507,13 +507,14 @@ export default class RecentFilesPlugin extends Plugin {
     file: TAbstractFile,
     oldPath: string,
   ): Promise<void> => {
+
     const entry = this.data.recentFiles.find(
       (recentFile) => recentFile.path === oldPath,
     );
     if (entry) {
       entry.path = file.path;
       entry.basename = this.trimExtension(file.name);
-      this.view.redraw();
+      this.view?.redraw();
       await this.saveData();
     }
   };
@@ -527,7 +528,7 @@ export default class RecentFilesPlugin extends Plugin {
     );
 
     if (beforeLen !== this.data.recentFiles.length) {
-      this.view.redraw();
+      this.view?.redraw();
       await this.saveData();
     }
   };
@@ -573,7 +574,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedPaths = patterns.split('\n');
           this.plugin.pruneOmittedFiles();
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
 
@@ -594,7 +595,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedTags = patterns.split('\n');
           this.plugin.pruneOmittedFiles();
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
 
@@ -606,7 +607,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           .onChange((value) => {
             this.plugin.data.omitBookmarks = value;
             this.plugin.pruneOmittedFiles();
-            this.plugin.view.redraw();
+            this.plugin.view?.redraw();
           });
       });
 
@@ -644,7 +645,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
           this.plugin.pruneLength();
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
 
