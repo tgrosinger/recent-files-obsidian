@@ -44,8 +44,8 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
-  omitBookmarks: false,
   updateOn: 'update-on-file-open',
+  omitBookmarks: false,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -127,7 +127,13 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
       const navFileTitleContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content recent-files-title-content',
+        cls: 'tree-item-inner nav-file-title-content',
+      });
+      const navFileTag = navFileTitle.createDiv({
+        cls: 'nav-file-tag'
+      });
+      const navFileSpacer = navFileTitle.createDiv({
+        cls: 'tree-item-spacer'
       });
 
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
@@ -136,6 +142,12 @@ class RecentFilesListView extends ItemView {
         : currentFile.basename;
 
       navFileTitleContent.setText(title);
+
+      const tFile = this.app.vault.getFileByPath(currentFile.path);
+      const extension = tFile?.extension
+      if (extension && extension !== 'md') {
+        navFileTag.setText(extension)
+      }
 
       setTooltip(navFile, currentFile.path);
 
@@ -181,7 +193,7 @@ class RecentFilesListView extends ItemView {
             .setIcon('file-plus')
             .onClick(() => {
               this.focusFile(currentFile, 'tab');
-            })
+            }),
         );
         const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
@@ -196,7 +208,7 @@ class RecentFilesListView extends ItemView {
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
         if (!currentFile) return;
 
-        const newLeaf = Keymap.isModEvent(event)
+        const newLeaf = Keymap.isModEvent(event);
         this.focusFile(currentFile, newLeaf);
       });
 
@@ -365,11 +377,11 @@ export default class RecentFilesPlugin extends Plugin {
     };
 
     if (patterns.some(fileMatchesRegex)) {
-      return false
+      return false;
     }
 
     // Matches for ignored Tags
-    const tfile = this.app.vault.getFileByPath(file.path)
+    const tfile = this.app.vault.getFileByPath(file.path);
     if (tfile) {
       const omittedTags: string[] = this.data.omittedTags.filter(
         (tag) => tag.length > 0,
@@ -379,35 +391,46 @@ export default class RecentFilesPlugin extends Plugin {
        Tag(s) may be rendered in one of two ways. If only one tag is
        present, as a string:
        ```yaml
-       tags: mytag
+       tags: tag1
        ```
 
        or, if one or more tags are present, in an array:
        ```yaml
        tags:
         - tag1
-        - tag2
+        - journal/tag2
        ```
 
-       If there are no tags, the `frontmatter.tags` property is missing.
+       If there are no tags, the `frontmatter.tags` array is empty.
       */
-      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags || [];
-      const tagMatch = (tag: string): boolean => omittedTags.includes(tag);
+      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags;
 
-      if (typeof fileTags === 'string') {
-        if (tagMatch(fileTags)) {
+      /*
+        Calling toString() here will flatten an array, or return the string.
+        i.e., ["tag1", "journal/tag2"] will become "tag1,journal/tag2"
+
+        Thus, permitting a normal regex match.
+
+        Though undocumented, passing an array into RegExp.test() works as it is
+        coerced it into a string as described.
+      */
+      const tagMatchesRegex = (pattern: string): boolean => {
+        try {
+          return new RegExp(pattern).test(fileTags.toString());
+        } catch (err) {
+          console.error('Recent Files: Invalid regex pattern: ' + pattern);
           return false;
         }
-      }
+      };
 
-      else if (fileTags.some(tagMatch)) {
+      if (omittedTags.some(tagMatchesRegex)) {
         return false;
       }
     }
 
     // Matches for Bookmarks
     // @ts-ignore
-    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks')
+    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks');
     if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
       const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
       if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
@@ -420,7 +443,7 @@ export default class RecentFilesPlugin extends Plugin {
 
   public onUserEnable(): void {
     // Open our view automatically only when the plugin is first enabled.
-    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true })
+    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true });
   }
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
@@ -435,7 +458,7 @@ export default class RecentFilesPlugin extends Plugin {
     if (leaf && leaf.view instanceof RecentFilesListView) {
       leaf.view.redraw();
     }
-  }
+  };
 
   private readonly onFileOpen = async (openedFile: TFile): Promise<void> => {
     if (!openedFile) {
@@ -554,16 +577,16 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
 
     const tagFragment = document.createDocumentFragment();
-    tagFragment.append('Frontmatter tags patterns to ignore. One pattern' +
-      ' per line');
+    tagFragment.append('Frontmatter-tag patterns to ignore. One pattern' +
+      ' per line.');
 
     new Setting(containerEl)
-      .setName('Omitted frontmatter tags')
+      .setName('Omitted frontmatter-tag patterns')
       .setDesc(tagFragment)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
-          .setPlaceholder('daily\nignore')
+          .setPlaceholder('ignore\narchive/a/b')
           .setValue(this.plugin.data.omittedTags.join('\n'));
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
@@ -585,19 +608,19 @@ class RecentFilesSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+      new Setting(containerEl)
       .setName('Update list when file is:')
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOption('update-on-file-open', 'Opened')
-          .addOption('update-on-file-edit', 'Changed')
-          .setValue(this.plugin.data.updateOn)
-          .onChange((value: 'update-on-file-edit' | 'update-on-file-open') => {
-            this.plugin.data.updateOn = value;
-            this.plugin.pruneOmittedFiles();
-            this.plugin.view.redraw();
-          });
-      });
+        .addDropdown((dropdown) => {
+          dropdown
+            .addOption('update-on-file-open', 'Opened')
+            .addOption('update-on-file-edit', 'Changed')
+            .setValue(this.plugin.data.updateOn)
+            .onChange((value: 'update-on-file-edit' | 'update-on-file-open') => {
+              this.plugin.data.updateOn = value;
+              this.plugin.pruneOmittedFiles();
+              this.plugin.view.redraw();
+            });
+        });
 
     new Setting(containerEl)
       .setName('List length')
