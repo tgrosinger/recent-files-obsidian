@@ -34,7 +34,7 @@ interface RecentFilesData {
   omittedPaths: string[];
   omittedTags: string[];
   omitBookmarks: boolean;
-  updateOn: 'update-on-file-edit' | 'update-on-file-open';
+  updateOn: 'file-edit' | 'file-open';
   maxLength?: number;
 }
 
@@ -44,7 +44,7 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
-  updateOn: 'update-on-file-open',
+  updateOn: 'file-open',
   omitBookmarks: false,
 };
 
@@ -464,12 +464,13 @@ export default class RecentFilesPlugin extends Plugin {
     if (!openedFile) {
       return;
     }
-    if (this.data.updateOn === 'update-on-file-edit') {
+    if (this.data.updateOn === 'file-edit') {
       this.registerEvent(this.app.workspace.on('quick-preview', this.waitingForEdit))
     } else {
       this.update(openedFile);
     }
     // Update the view if there is one.
+    // We redraw the leaf to handle active file highlighting.
     const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
     if (leaf && leaf.view instanceof RecentFilesListView) {
       leaf.view.redraw();
@@ -612,10 +613,10 @@ class RecentFilesSettingTab extends PluginSettingTab {
       .setName('Update list when file is:')
         .addDropdown((dropdown) => {
           dropdown
-            .addOption('update-on-file-open', 'Opened')
-            .addOption('update-on-file-edit', 'Changed')
+            .addOption('file-open', 'Opened')
+            .addOption('file-edit', 'Changed')
             .setValue(this.plugin.data.updateOn)
-            .onChange((value: 'update-on-file-edit' | 'update-on-file-open') => {
+            .onChange((value: 'file-edit' | 'file-open') => {
               this.plugin.data.updateOn = value;
               this.plugin.pruneOmittedFiles();
               this.plugin.view.redraw();
