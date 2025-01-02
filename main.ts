@@ -465,6 +465,7 @@ export default class RecentFilesPlugin extends Plugin {
       return;
     }
     if (this.data.updateOn === 'file-edit') {
+      this.app.workspace.off('quick-preview', this.waitingForEdit);
       this.registerEvent(this.app.workspace.on('quick-preview', this.waitingForEdit))
     } else {
       this.update(openedFile);
