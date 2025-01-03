@@ -34,6 +34,7 @@ interface RecentFilesData {
   omittedPaths: string[];
   omittedTags: string[];
   omitBookmarks: boolean;
+  updateOn: 'file-edit' | 'file-open';
   maxLength?: number;
 }
 
@@ -43,6 +44,7 @@ const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
   omittedTags: [],
+  updateOn: 'file-open',
   omitBookmarks: false,
 };
 
@@ -313,7 +315,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
-    this.registerEvent(this.app.workspace.on('file-open', this.update));
+    this.registerEvent(this.app.workspace.on('file-open', this.onFileOpen));
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
@@ -458,6 +460,29 @@ export default class RecentFilesPlugin extends Plugin {
     }
   };
 
+  private readonly onFileOpen = async (openedFile: TFile): Promise<void> => {
+    if (!openedFile) {
+      return;
+    }
+    if (this.data.updateOn === 'file-edit') {
+      this.app.workspace.off('quick-preview', this.waitingForEdit);
+      this.registerEvent(this.app.workspace.on('quick-preview', this.waitingForEdit))
+    } else {
+      this.update(openedFile);
+    }
+    // Update the view if there is one.
+    // We redraw the leaf to handle active file highlighting.
+    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    if (leaf && leaf.view instanceof RecentFilesListView) {
+      leaf.view.redraw();
+    }
+  }
+
+  private readonly waitingForEdit = async (editedFile: TFile, data: string): Promise<void> => {
+    this.update(editedFile);
+    this.app.workspace.off('quick-preview', this.waitingForEdit);
+  }
+
   private readonly updateData = async (file: TFile): Promise<void> => {
     const lengthBefore = this.data.recentFiles.length;
     this.data.recentFiles = this.data.recentFiles.filter(
@@ -584,6 +609,20 @@ class RecentFilesSettingTab extends PluginSettingTab {
             this.plugin.view.redraw();
           });
       });
+
+      new Setting(containerEl)
+      .setName('Update list when file is:')
+        .addDropdown((dropdown) => {
+          dropdown
+            .addOption('file-open', 'Opened')
+            .addOption('file-edit', 'Changed')
+            .setValue(this.plugin.data.updateOn)
+            .onChange((value: 'file-edit' | 'file-open') => {
+              this.plugin.data.updateOn = value;
+              this.plugin.pruneOmittedFiles();
+              this.plugin.view.redraw();
+            });
+        });
 
     new Setting(containerEl)
       .setName('List length')
