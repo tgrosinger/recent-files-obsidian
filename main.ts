@@ -621,7 +621,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
             .onChange((value: 'file-edit' | 'file-open') => {
               this.plugin.data.updateOn = value;
               this.plugin.pruneOmittedFiles();
-              this.plugin.view.redraw();
+              this.plugin.view?.redraw();
             });
         });
 
