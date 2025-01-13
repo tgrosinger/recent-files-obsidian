@@ -297,33 +297,6 @@ class RecentFilesListView extends ItemView {
     await this.plugin.saveData();
   };
 
-  private readonly updateData = async (file: TFile): Promise<void> => {
-    this.data.recentFiles = this.data.recentFiles.filter(
-      (currFile) => currFile.path !== file.path,
-    );
-    this.data.recentFiles.unshift({
-      basename: file.basename,
-      path: file.path,
-      time: Date.now(),
-    });
-
-    await this.plugin.pruneLength(); // Handles the save
-  };
-
-  private readonly update = async (openedFile: TFile): Promise<void> => {
-    // Attempt to work around an Electron bug around file access when closing BrowserWindows.
-    // https://github.com/electron/electron/issues/40607
-    // https://discord.com/channels/686053708261228577/989603365606531104/1242215113969111211
-    await sleep(100);
-
-    if (!openedFile || !this.plugin.shouldAddFile(openedFile)) {
-      return;
-    }
-
-    await this.updateData(openedFile);
-    this.redraw();
-  };
-
   /**
    * Open the provided file in the most recent leaf.
    *
