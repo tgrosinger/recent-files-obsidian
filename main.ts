@@ -52,7 +52,7 @@ interface RecentFilesData {
   omitBookmarks: boolean;
   updateOn: 'file-edit' | 'file-open';
   maxLength?: number;
-  displayTimes?: boolean;
+  displayTimes: 'never' | 'always' | 'tooltip';
   displayTimesFormat?: string;
 }
 
@@ -61,7 +61,7 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
-  displayTimes: false,
+  displayTimes: 'never',
   displayTimesFormat: '',
   omittedTags: [],
   updateOn: 'file-open',
@@ -159,6 +159,10 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-spacer'
       });
 
+      const fileTime = (this.data.displayTimesFormat && this.data.displayTimesFormat.trim() !== '')
+        ? window.moment(currentFile.time).format(this.data.displayTimesFormat)
+        : window.moment(currentFile.time).fromNow();
+
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
       const title = frontMatterResolver
         ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
@@ -172,7 +176,9 @@ class RecentFilesListView extends ItemView {
         navFileTag.setText(extension)
       }
 
-      setTooltip(navFile, currentFile.path);
+      if(this.data.displayTimes === 'tooltip' && currentFile.time) {
+        setTooltip(navFile, currentFile.path + '\n' + fileTime);
+      } else setTooltip(navFile, currentFile.path);
 
       if(currentFile.time) {
         navFile.setAttr('data-time', currentFile.time);
@@ -191,12 +197,11 @@ class RecentFilesListView extends ItemView {
         else if(window.moment(currentFile.time).isBetween(window.moment().startOf('year'), window.moment())) navFile.addClass('recent-files-this-year');
         else if(window.moment(currentFile.time).isBetween(window.moment().year(window.moment().year() - 1).startOf('year'), window.moment().startOf('year'))) navFile.addClass('recent-files-last-year');
 
-        if(this.data.displayTimes) {
+        if(this.data.displayTimes === 'always') {
           const navFileTime = navFileContent.createDiv({
             cls: 'recent-files-time-content'
           });
-          if(this.data.displayTimesFormat && this.data.displayTimesFormat.trim() !== '') navFileTime.setText(window.moment(currentFile.time).format(this.data.displayTimesFormat));
-          else navFileTime.setText(window.moment(currentFile.time).fromNow());
+          navFileTime.setText(fileTime);
         }
       }
 
@@ -730,12 +735,16 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Display times')
-      .setDesc('Display when a file was last accessed.')
-      .addToggle((toggle) => {
-        toggle
-          .setValue(this.plugin.data.displayTimes || false)
-          .onChange((value) => {
+      .setDesc('Show timestamps when a file was last updated in the list.')
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('never', 'Never')
+          .addOption('always', 'Always')
+          .addOption('tooltip', 'On Hover')
+          .setValue(this.plugin.data.displayTimes)
+          .onChange((value: 'never' | 'always' | 'tooltip') => {
             this.plugin.data.displayTimes = value;
+            this.plugin.pruneOmittedFiles();
             this.plugin.view?.redraw();
           });
       });
