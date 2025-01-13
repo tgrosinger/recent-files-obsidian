@@ -146,8 +146,11 @@ class RecentFilesListView extends ItemView {
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
-      const navFileTitleContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content',
+      const navFileContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content recent-files-content'
+      });
+      const navFileTitleContent = navFileContent.createDiv({
+        cls: 'recent-files-title-content',
       });
       const navFileTag = navFileTitle.createDiv({
         cls: 'nav-file-tag'
@@ -567,6 +570,7 @@ export default class RecentFilesPlugin extends Plugin {
       this.data.recentFiles.unshift({
         basename: file.basename,
         path: file.path,
+        time: Date.now(),
       });
       needsSave = true;
     }
@@ -732,7 +736,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           .setValue(this.plugin.data.displayTimes || false)
           .onChange((value) => {
             this.plugin.data.displayTimes = value;
-            this.plugin.view.redraw();
+            this.plugin.view?.redraw();
           });
       });
 
@@ -744,7 +748,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
         text.inputEl.onblur = (e: FocusEvent) => {
           const timesFormat = (e.target as HTMLInputElement).value;
           this.plugin.data.displayTimesFormat = timesFormat;
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
 
