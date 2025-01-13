@@ -1,6 +1,6 @@
 {
   "name": "recent-files-obsidian",
-  "version": "1.4.1",
+  "version": "1.7.4",
   "description": "List files by most recently opened",
   "main": "main.js",
   "scripts": {
@@ -24,7 +24,8 @@
     "eslint-plugin-jsdoc": "48.0.2",
     "eslint-plugin-prefer-arrow": "1.2.3",
     "eslint-plugin-simple-import-sort": "10.0.0",
-    "obsidian": "https://github.com/obsidianmd/obsidian-api/archive/8b2eda0f24285636c8aa116972643e5233a23dc1.tar.gz",
+    "front-matter-plugin-api-provider": "0.1.4-alpha",
+    "obsidian": "https://github.com/obsidianmd/obsidian-api/archive/23947b58d372ea02225324308e31d36b4aa95869.tar.gz",
     "tslib": "2.6.2",
     "typescript": "5.3.3"
   }

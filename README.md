@@ -1,7 +1,7 @@
 # Recent Files for Obsidian
 
 This plugin displays a list of most recently opened files in the sidebar.
-Optionally include paths of files which should be excluded from the list.
+Optionally, exclude certain paths, frontmatter tags, or bookmarked files. 
 
 That's all there is to it!
 
@@ -14,6 +14,10 @@ As with the file explorer view, you can:
 ## Screenshots
 
 ![sidebar](https://raw.githubusercontent.com/tgrosinger/recent-files-obsidian/main/resources/screenshots/sidebar.png)
+
+## Other Plugin Support
+
+If you use the [Front Matter Title plugin](https://github.com/snezhig/obsidian-front-matter-title), enable the explorer module to name files in the Recent Files sidebar from the note frontmatter title.
 
 ## Pricing
 

@@ -10,6 +10,7 @@ import {
   PluginSettingTab,
   sanitizeHTMLToDom,
   setIcon,
+  setTooltip,
   Setting,
   TAbstractFile,
   TFile,
@@ -24,15 +25,32 @@ declare global {
   }
 }
 
+import { getApiSafe } from 'front-matter-plugin-api-provider';
+
 interface FilePath {
   path: string;
   basename: string;
   time?: number;
 }
 
+interface BookmarkedFile {
+  ctime: number;
+  path: string;
+  type: string;
+}
+
+interface BookmarkedFile {
+  ctime: number;
+  path: string;
+  type: string;
+}
+
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
+  omittedTags: string[];
+  omitBookmarks: boolean;
+  updateOn: 'file-edit' | 'file-open';
   maxLength?: number;
   displayTimes?: boolean;
   displayTimesFormat?: string;
@@ -45,6 +63,9 @@ const DEFAULT_DATA: RecentFilesData = {
   omittedPaths: [],
   displayTimes: false,
   displayTimesFormat: '',
+  omittedTags: [],
+  updateOn: 'file-open',
+  omitBookmarks: false,
 };
 
 const RecentFilesListViewType = 'recent-files';
@@ -102,16 +123,21 @@ class RecentFilesListView extends ItemView {
       });
   }
 
-  public load(): void {
-    super.load();
-    this.registerEvent(this.app.workspace.on('file-open', this.update));
-  }
-
   public readonly redraw = (): void => {
     const openFile = this.app.workspace.getActiveFile();
 
     const rootEl = createDiv({ cls: 'nav-folder mod-root' });
     const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
+
+    // Add support for the Front Matter Title plugin (https://github.com/snezhig/obsidian-front-matter-title)
+    // Get the plugin's safe API and check if the plugin is enabled.
+    // If the plugin is not installed, this will not create an error.
+    const frontMatterApi = getApiSafe(this.app);
+    // We query the "explorer" feature because it is the closest in form to this plugin's features.
+    const frontMatterEnabled = frontMatterApi && frontMatterApi.getEnabledFeatures().contains('explorer');
+    const frontMatterResolver = frontMatterEnabled
+      ? frontMatterApi.getResolverFactory()?.createResolver('explorer')
+      : null;
 
     this.data.recentFiles.forEach((currentFile) => {
       const navFile = childrenEl.createDiv({
@@ -120,14 +146,30 @@ class RecentFilesListView extends ItemView {
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
-      const navFileContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content recent-files-content'
+      const navFileTitleContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content',
       });
-      const navFileTitleContent = navFileContent.createDiv({
-        cls: 'recent-files-title-content',
+      const navFileTag = navFileTitle.createDiv({
+        cls: 'nav-file-tag'
+      });
+      const navFileSpacer = navFileTitle.createDiv({
+        cls: 'tree-item-spacer'
       });
 
-      navFileTitleContent.setText(currentFile.basename);
+      // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
+      const title = frontMatterResolver
+        ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
+        : currentFile.basename;
+
+      navFileTitleContent.setText(title);
+
+      const tFile = this.app.vault.getFileByPath(currentFile.path);
+      const extension = tFile?.extension
+      if (extension && extension !== 'md') {
+        navFileTag.setText(extension)
+      }
+
+      setTooltip(navFile, currentFile.path);
 
       if(currentFile.time) {
         navFile.setAttr('data-time', currentFile.time);
@@ -197,7 +239,7 @@ class RecentFilesListView extends ItemView {
             .setIcon('file-plus')
             .onClick(() => {
               this.focusFile(currentFile, 'tab');
-            })
+            }),
         );
         const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
@@ -212,7 +254,7 @@ class RecentFilesListView extends ItemView {
       navFileTitle.addEventListener('click', (event: MouseEvent) => {
         if (!currentFile) return;
 
-        const newLeaf = Keymap.isModEvent(event)
+        const newLeaf = Keymap.isModEvent(event);
         this.focusFile(currentFile, newLeaf);
       });
 
@@ -244,7 +286,7 @@ class RecentFilesListView extends ItemView {
     this.data.recentFiles = this.data.recentFiles.filter(
       (currFile) => currFile.path !== file.path,
     );
-    await this.plugin.pruneLength(); // Handles the save
+    await this.plugin.saveData();
   };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
@@ -302,7 +344,7 @@ class RecentFilesListView extends ItemView {
 
 export default class RecentFilesPlugin extends Plugin {
   public data: RecentFilesData;
-  public view: RecentFilesListView;
+  public view: RecentFilesListView | undefined;
 
   public async onload(): Promise<void> {
     console.log('Recent Files: Loading plugin v' + this.manifest.version);
@@ -344,12 +386,9 @@ export default class RecentFilesPlugin extends Plugin {
       },
     );
 
-    this.app.workspace.onLayoutReady(() => {
-      this.initView();
-    });
-
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
+    this.registerEvent(this.app.workspace.on('file-open', this.onFileOpen));
 
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
@@ -369,9 +408,19 @@ export default class RecentFilesPlugin extends Plugin {
     await super.saveData(this.data);
   }
 
+  public async onExternalSettingsChange(): Promise<void> {
+    await this.loadData();
+    await this.pruneLength();
+    await this.pruneOmittedFiles();
+    this.view?.redraw();
+  }
+
   public readonly pruneOmittedFiles = async (): Promise<void> => {
+    const lengthBefore = this.data.recentFiles.length;
     this.data.recentFiles = this.data.recentFiles.filter(this.shouldAddFile);
-    await this.saveData();
+    if (lengthBefore !== this.data.recentFiles.length) {
+      await this.saveData();
+    }
   };
 
   public readonly pruneLength = async (): Promise<void> => {
@@ -387,6 +436,7 @@ export default class RecentFilesPlugin extends Plugin {
   };
 
   public readonly shouldAddFile = (file: FilePath): boolean => {
+    // Matches for ignored Paths
     const patterns: string[] = this.data.omittedPaths.filter(
       (path) => path.length > 0,
     );
@@ -398,36 +448,146 @@ export default class RecentFilesPlugin extends Plugin {
         return false;
       }
     };
-    return !patterns.some(fileMatchesRegex);
+
+    if (patterns.some(fileMatchesRegex)) {
+      return false;
+    }
+
+    // Matches for ignored Tags
+    const tfile = this.app.vault.getFileByPath(file.path);
+    if (tfile) {
+      const omittedTags: string[] = this.data.omittedTags.filter(
+        (tag) => tag.length > 0,
+      );
+
+      /*
+       Tag(s) may be rendered in one of two ways. If only one tag is
+       present, as a string:
+       ```yaml
+       tags: tag1
+       ```
+
+       or, if one or more tags are present, in an array:
+       ```yaml
+       tags:
+        - tag1
+        - journal/tag2
+       ```
+
+       If there are no tags, the `frontmatter.tags` array is empty.
+      */
+      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags;
+
+      /*
+        Calling toString() here will flatten an array, or return the string.
+        i.e., ["tag1", "journal/tag2"] will become "tag1,journal/tag2"
+
+        Thus, permitting a normal regex match.
+
+        Though undocumented, passing an array into RegExp.test() works as it is
+        coerced it into a string as described.
+      */
+      const tagMatchesRegex = (pattern: string): boolean => {
+        try {
+          return new RegExp(pattern).test(fileTags.toString());
+        } catch (err) {
+          console.error('Recent Files: Invalid regex pattern: ' + pattern);
+          return false;
+        }
+      };
+
+      if (omittedTags.some(tagMatchesRegex)) {
+        return false;
+      }
+    }
+
+    // Matches for Bookmarks
+    // @ts-ignore
+    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks');
+    if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
+      const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
+      if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
-  private readonly initView = async (): Promise<void> => {
-    let leaf: WorkspaceLeaf | null = null;
-    for (leaf of this.app.workspace.getLeavesOfType(RecentFilesListViewType)) {
-      if (leaf.view instanceof RecentFilesListView) return;
-      // The view instance was created by an older version of the plugin,
-      // so clear it and recreate it (so it'll be the new version).
-      // This avoids the need to reload Obsidian to update the plugin.
-      await leaf.setViewState({ type: 'empty' });
-      break;
+  public onUserEnable(): void {
+    // Open our view automatically only when the plugin is first enabled.
+    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true });
+  }
+
+  private readonly update = async (openedFile: TFile): Promise<void> => {
+    if (!openedFile) {
+      return;
     }
-    (leaf ?? this.app.workspace.getLeftLeaf(false))?.setViewState({
-      type: RecentFilesListViewType,
-      active: true,
-    });
+
+    await this.updateData(openedFile);
+
+    // Update the view if there is one.
+    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    if (leaf && leaf.view instanceof RecentFilesListView) {
+      leaf.view.redraw();
+    }
+  };
+
+  private readonly onFileOpen = async (openedFile: TFile): Promise<void> => {
+    if (!openedFile) {
+      return;
+    }
+    if (this.data.updateOn === 'file-edit') {
+      this.app.workspace.off('quick-preview', this.waitingForEdit);
+      this.registerEvent(this.app.workspace.on('quick-preview', this.waitingForEdit))
+    } else {
+      this.update(openedFile);
+    }
+    // Update the view if there is one.
+    // We redraw the leaf to handle active file highlighting.
+    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    if (leaf && leaf.view instanceof RecentFilesListView) {
+      leaf.view.redraw();
+    }
+  }
+
+  private readonly waitingForEdit = async (editedFile: TFile, data: string): Promise<void> => {
+    this.update(editedFile);
+    this.app.workspace.off('quick-preview', this.waitingForEdit);
+  }
+
+  private readonly updateData = async (file: TFile): Promise<void> => {
+    const lengthBefore = this.data.recentFiles.length;
+    this.data.recentFiles = this.data.recentFiles.filter(
+      (currFile) => currFile.path !== file.path,
+    );
+    let needsSave = lengthBefore !== this.data.recentFiles.length;
+
+    if (this.shouldAddFile(file)) {
+      this.data.recentFiles.unshift({
+        basename: file.basename,
+        path: file.path,
+      });
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      await this.pruneLength(); // Handles the save
+    }
   };
 
   private readonly handleRename = async (
     file: TAbstractFile,
     oldPath: string,
   ): Promise<void> => {
+
     const entry = this.data.recentFiles.find(
       (recentFile) => recentFile.path === oldPath,
     );
     if (entry) {
       entry.path = file.path;
       entry.basename = this.trimExtension(file.name);
-      this.view.redraw();
+      this.view?.redraw();
       await this.saveData();
     }
   };
@@ -441,7 +601,7 @@ export default class RecentFilesPlugin extends Plugin {
     );
 
     if (beforeLen !== this.data.recentFiles.length) {
-      this.view.redraw();
+      this.view?.redraw();
       await this.saveData();
     }
   };
@@ -465,7 +625,6 @@ class RecentFilesSettingTab extends PluginSettingTab {
   public display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Recent Files List' });
 
     const omittedPathsDesc: DocumentFragment = sanitizeHTMLToDom(
       'RegExp patterns to ignore. One pattern per line. See'
@@ -490,9 +649,56 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedPaths = patterns.split('\n');
           this.plugin.pruneOmittedFiles();
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
+
+
+    const tagFragment = document.createDocumentFragment();
+    tagFragment.append('Frontmatter-tag patterns to ignore. One pattern' +
+      ' per line.');
+
+    new Setting(containerEl)
+      .setName('Omitted frontmatter-tag patterns')
+      .setDesc(tagFragment)
+      .addTextArea((textArea) => {
+        textArea.inputEl.setAttr('rows', 6);
+        textArea
+          .setPlaceholder('ignore\narchive/a/b')
+          .setValue(this.plugin.data.omittedTags.join('\n'));
+        textArea.inputEl.onblur = (e: FocusEvent) => {
+          const patterns = (e.target as HTMLInputElement).value;
+          this.plugin.data.omittedTags = patterns.split('\n');
+          this.plugin.pruneOmittedFiles();
+          this.plugin.view?.redraw();
+        };
+      });
+
+    new Setting(containerEl)
+      .setName('Omit bookmarked files')
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.data.omitBookmarks)
+          .onChange((value) => {
+            this.plugin.data.omitBookmarks = value;
+            this.plugin.pruneOmittedFiles();
+            this.plugin.view?.redraw();
+          });
+      });
+
+      new Setting(containerEl)
+      .setName('Update list when file is:')
+        .addDropdown((dropdown) => {
+          dropdown
+            .addOption('file-open', 'Opened')
+            .addOption('file-edit', 'Changed')
+            .setValue(this.plugin.data.updateOn)
+            .onChange((value: 'file-edit' | 'file-open') => {
+              this.plugin.data.updateOn = value;
+              this.plugin.pruneOmittedFiles();
+              this.plugin.view?.redraw();
+            });
+        });
 
     new Setting(containerEl)
       .setName('List length')
@@ -514,7 +720,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
           this.plugin.pruneLength();
-          this.plugin.view.redraw();
+          this.plugin.view?.redraw();
         };
       });
 

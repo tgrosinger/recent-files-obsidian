@@ -1,5 +1,11 @@
+.recent-files-file {
+  .tree-item-spacer {
+    flex-grow: 1;
+  }
+}
+
 .recent-files-title {
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: unset;
 }
 
@@ -16,6 +22,7 @@
 }
 
 .recent-files-file-delete {
+  justify-content: right;
   display: none;
   align-items: center;
 }
