@@ -8,6 +8,7 @@ import {
   PaneType,
   Plugin,
   PluginSettingTab,
+  sanitizeHTMLToDom,
   setIcon,
   setTooltip,
   Setting,
@@ -16,11 +17,26 @@ import {
   WorkspaceLeaf,
 } from 'obsidian';
 
+// thx https://liamca.in/Obsidian/API+FAQ/third-party/use+momentjs
+import type moment from 'moment';
+declare global {
+  interface Window {
+    moment: typeof moment;
+  }
+}
+
 import { getApiSafe } from 'front-matter-plugin-api-provider';
 
 interface FilePath {
   path: string;
   basename: string;
+  time?: number;
+}
+
+interface BookmarkedFile {
+  ctime: number;
+  path: string;
+  type: string;
 }
 
 interface BookmarkedFile {
@@ -36,6 +52,8 @@ interface RecentFilesData {
   omitBookmarks: boolean;
   updateOn: 'file-edit' | 'file-open';
   maxLength?: number;
+  displayTimes: 'never' | 'always' | 'tooltip';
+  displayTimesFormat?: string;
 }
 
 const defaultMaxLength: number = 50;
@@ -43,6 +61,8 @@ const defaultMaxLength: number = 50;
 const DEFAULT_DATA: RecentFilesData = {
   recentFiles: [],
   omittedPaths: [],
+  displayTimes: 'never',
+  displayTimesFormat: '',
   omittedTags: [],
   updateOn: 'file-open',
   omitBookmarks: false,
@@ -126,8 +146,11 @@ class RecentFilesListView extends ItemView {
       const navFileTitle = navFile.createDiv({
         cls: 'tree-item-self is-clickable nav-file-title recent-files-title',
       });
-      const navFileTitleContent = navFileTitle.createDiv({
-        cls: 'tree-item-inner nav-file-title-content',
+      const navFileContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content recent-files-content'
+      });
+      const navFileTitleContent = navFileContent.createDiv({
+        cls: 'recent-files-title-content',
       });
       const navFileTag = navFileTitle.createDiv({
         cls: 'nav-file-tag'
@@ -135,6 +158,10 @@ class RecentFilesListView extends ItemView {
       const navFileSpacer = navFileTitle.createDiv({
         cls: 'tree-item-spacer'
       });
+
+      const fileTime = (this.data.displayTimesFormat && this.data.displayTimesFormat.trim() !== '')
+        ? window.moment(currentFile.time).format(this.data.displayTimesFormat)
+        : window.moment(currentFile.time).fromNow();
 
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
       const title = frontMatterResolver
@@ -149,7 +176,34 @@ class RecentFilesListView extends ItemView {
         navFileTag.setText(extension)
       }
 
-      setTooltip(navFile, currentFile.path);
+      if(this.data.displayTimes === 'tooltip' && currentFile.time) {
+        setTooltip(navFile, currentFile.path + '\n' + fileTime);
+      } else setTooltip(navFile, currentFile.path);
+
+      if(currentFile.time) {
+        navFile.setAttr('data-time', currentFile.time);
+
+        if(window.moment(currentFile.time).isBetween(window.moment().startOf('hour'), window.moment())) navFile.addClass('recent-files-this-hour');
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('day'), window.moment())) navFile.addClass('recent-files-this-day');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().day(window.moment().day() - 1).startOf('day'), window.moment().startOf('day'))) navFile.addClass('recent-files-last-day');
+        
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('week'), window.moment())) navFile.addClass('recent-files-this-week');
+        else if(window.moment(currentFile.time).isBetween(window.moment().week(window.moment().week() - 1).startOf('week'), window.moment().startOf('week'))) navFile.addClass('recent-files-last-week');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('month'), window.moment())) navFile.addClass('recent-files-this-month');
+        else if(window.moment(currentFile.time).isBetween(window.moment().month(window.moment().month() - 1).startOf('month'), window.moment().startOf('month'))) navFile.addClass('recent-files-last-month');
+
+        else if(window.moment(currentFile.time).isBetween(window.moment().startOf('year'), window.moment())) navFile.addClass('recent-files-this-year');
+        else if(window.moment(currentFile.time).isBetween(window.moment().year(window.moment().year() - 1).startOf('year'), window.moment().startOf('year'))) navFile.addClass('recent-files-last-year');
+
+        if(this.data.displayTimes === 'always') {
+          const navFileTime = navFileContent.createDiv({
+            cls: 'recent-files-time-content'
+          });
+          navFileTime.setText(fileTime);
+        }
+      }
 
       if (openFile && currentFile.path === openFile.path) {
         navFileTitle.addClass('is-active');
@@ -494,6 +548,7 @@ export default class RecentFilesPlugin extends Plugin {
       this.data.recentFiles.unshift({
         basename: file.basename,
         path: file.path,
+        time: Date.now(),
       });
       needsSave = true;
     }
@@ -553,18 +608,20 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    const patternFragment = document.createDocumentFragment();
-    const link = document.createElement('a');
-    link.href =
-      'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
-    link.text = 'MDN - Regular expressions';
-    patternFragment.append('RegExp patterns to ignore. One pattern per line. See ');
-    patternFragment.append(link);
-    patternFragment.append(' for help.');
+    const omittedPathsDesc: DocumentFragment = sanitizeHTMLToDom(
+      'RegExp patterns to ignore. One pattern per line. See'
+      + ' <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern">'
+      + 'MDN - Regular expressions</a> for help.'
+    );
+
+    const timesFormatDesc: DocumentFragment = sanitizeHTMLToDom(
+      '<a href="https://momentjs.com/docs/#/displaying/format/">Moment.js format string</a> to use when displaying times.'
+      + '<br>Leave blank to use relative times, eg "4 hours ago"'
+    );
 
     new Setting(containerEl)
       .setName('Omitted pathname patterns')
-      .setDesc(patternFragment)
+      .setDesc(omittedPathsDesc)
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
@@ -645,6 +702,34 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
           this.plugin.pruneLength();
+          this.plugin.view?.redraw();
+        };
+      });
+
+    new Setting(containerEl)
+      .setName('Display times')
+      .setDesc('Show timestamps when a file was last updated in the list.')
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('never', 'Never')
+          .addOption('always', 'Always')
+          .addOption('tooltip', 'On Hover')
+          .setValue(this.plugin.data.displayTimes)
+          .onChange((value: 'never' | 'always' | 'tooltip') => {
+            this.plugin.data.displayTimes = value;
+            this.plugin.pruneOmittedFiles();
+            this.plugin.view?.redraw();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName('Display time format')
+      .setDesc(timesFormatDesc)
+      .addText((text) => {
+        text.setValue(this.plugin.data.displayTimesFormat || '');
+        text.inputEl.onblur = (e: FocusEvent) => {
+          const timesFormat = (e.target as HTMLInputElement).value;
+          this.plugin.data.displayTimesFormat = timesFormat;
           this.plugin.view?.redraw();
         };
       });
