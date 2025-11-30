@@ -358,8 +358,8 @@ export default class RecentFilesPlugin extends Plugin {
         this.data.recentFiles.length - toRemove,
         toRemove,
       );
+      await this.saveData();
     }
-    await this.saveData();
   };
 
   public readonly shouldAddFile = (file: FilePath): boolean => {
@@ -498,8 +498,9 @@ export default class RecentFilesPlugin extends Plugin {
       needsSave = true;
     }
 
+    await this.pruneLength();
     if (needsSave) {
-      await this.pruneLength(); // Handles the save
+      await this.saveData();
     }
   };
 
