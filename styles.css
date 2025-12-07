@@ -32,3 +32,9 @@
 .recent-files-donate-button {
   margin: 10px;
 }
+
+.recent-files-title-path {
+  margin: 0px 5px;
+  font-size:0.85em;
+  color: var(--text-faint);
+}
