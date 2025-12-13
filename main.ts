@@ -212,7 +212,7 @@ class RecentFilesListView extends ItemView {
         this.focusFile(currentFile, newLeaf);
       });
 
-      navFileTitleContent.addEventListener('mousedown', (event: MouseEvent) => {
+      navFile.addEventListener('mousedown', (event: MouseEvent) => {
         if (!currentFile) return;
 
         if (event.button === 1) {
