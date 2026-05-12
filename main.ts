@@ -74,7 +74,7 @@ class RecentFilesListView extends ItemView {
   }
 
   public getDisplayText(): string {
-    return 'Recent Files';
+    return 'Recent files';
   }
 
   public getIcon(): string {
@@ -114,7 +114,9 @@ class RecentFilesListView extends ItemView {
     // If the plugin is not installed, this will not create an error.
     const frontMatterApi = getApiSafe(this.app);
     // We query the "explorer" feature because it is the closest in form to this plugin's features.
-    const frontMatterEnabled = frontMatterApi && frontMatterApi.getEnabledFeatures().contains('explorer');
+    const frontMatterEnabled =
+      frontMatterApi &&
+      frontMatterApi.getEnabledFeatures().contains('explorer');
     const frontMatterResolver = frontMatterEnabled
       ? frontMatterApi.getResolverFactory()?.createResolver('explorer')
       : null;
@@ -130,23 +132,24 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-inner nav-file-title-content',
       });
       const navFileTag = navFileTitle.createDiv({
-        cls: 'nav-file-tag'
+        cls: 'nav-file-tag',
       });
-      const navFileSpacer = navFileTitle.createDiv({
-        cls: 'tree-item-spacer'
+      navFileTitle.createDiv({
+        cls: 'tree-item-spacer',
       });
 
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
       const title = frontMatterResolver
-        ? frontMatterResolver.resolve(currentFile.path) ?? currentFile.basename
+        ? (frontMatterResolver.resolve(currentFile.path) ??
+          currentFile.basename)
         : currentFile.basename;
 
       navFileTitleContent.setText(title);
 
       const tFile = this.app.vault.getFileByPath(currentFile.path);
-      const extension = tFile?.extension
+      const extension = tFile?.extension;
       if (extension && extension !== 'md') {
-        navFileTag.setText(extension)
+        navFileTag.setText(extension);
       }
 
       setTooltip(navFile, currentFile.path);
@@ -164,8 +167,7 @@ class RecentFilesListView extends ItemView {
           '',
         );
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const dragManager = (this.app as any).dragManager;
+        const { dragManager } = this.app;
         const dragData = dragManager.dragFile(event, file);
         dragManager.onDragStart(event, dragData);
       });
@@ -250,20 +252,23 @@ class RecentFilesListView extends ItemView {
    * the most recent split. If the most recent split is pinned, this is set to
    * true.
    */
-  private readonly focusFile = (file: FilePath, newLeaf: boolean | PaneType): void => {
+  private readonly focusFile = (
+    file: FilePath,
+    newLeaf: boolean | PaneType,
+  ): void => {
     const targetFile = this.app.vault
       .getFiles()
       .find((f) => f.path === file.path);
 
     if (targetFile) {
       const leaf = this.app.workspace.getLeaf(newLeaf);
-      leaf.openFile(targetFile);
+      void leaf.openFile(targetFile);
     } else {
       new Notice('Cannot find a file with that name');
       this.data.recentFiles = this.data.recentFiles.filter(
         (fp) => fp.path !== file.path,
       );
-      this.plugin.saveData();
+      void this.plugin.saveData();
       this.redraw();
     }
   };
@@ -274,7 +279,7 @@ export default class RecentFilesPlugin extends Plugin {
   public view: RecentFilesListView | undefined;
 
   public async onload(): Promise<void> {
-    console.log('Recent Files: Loading plugin v' + this.manifest.version);
+    console.debug('Recent Files: Loading plugin v' + this.manifest.version);
 
     await this.loadData();
 
@@ -290,9 +295,7 @@ export default class RecentFilesPlugin extends Plugin {
       name: 'Open',
       callback: async () => {
         let leaf: WorkspaceLeaf | null;
-        [leaf] = this.app.workspace.getLeavesOfType(
-          RecentFilesListViewType,
-        );
+        [leaf] = this.app.workspace.getLeavesOfType(RecentFilesListViewType);
         if (!leaf) {
           leaf = this.app.workspace.getLeftLeaf(false);
           await leaf?.setViewState({ type: RecentFilesListViewType });
@@ -370,7 +373,7 @@ export default class RecentFilesPlugin extends Plugin {
     const fileMatchesRegex = (pattern: string): boolean => {
       try {
         return new RegExp(pattern).test(file.path);
-      } catch (err) {
+      } catch {
         console.error('Recent Files: Invalid regex pattern: ' + pattern);
         return false;
       }
@@ -417,7 +420,7 @@ export default class RecentFilesPlugin extends Plugin {
       const tagMatchesRegex = (pattern: string): boolean => {
         try {
           return new RegExp(pattern).test(fileTags.toString());
-        } catch (err) {
+        } catch {
           console.error('Recent Files: Invalid regex pattern: ' + pattern);
           return false;
         }
@@ -443,7 +446,9 @@ export default class RecentFilesPlugin extends Plugin {
 
   public onUserEnable(): void {
     // Open our view automatically only when the plugin is first enabled.
-    this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', { reveal: true });
+    void this.app.workspace.ensureSideLeaf(RecentFilesListViewType, 'left', {
+      reveal: true,
+    });
   }
 
   private readonly update = async (openedFile: TFile): Promise<void> => {
@@ -454,7 +459,9 @@ export default class RecentFilesPlugin extends Plugin {
     await this.updateData(openedFile);
 
     // Update the view if there is one.
-    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    const leaf = this.app.workspace
+      .getLeavesOfType(RecentFilesListViewType)
+      .first();
     if (leaf && leaf.view instanceof RecentFilesListView) {
       leaf.view.redraw();
     }
@@ -466,22 +473,26 @@ export default class RecentFilesPlugin extends Plugin {
     }
     if (this.data.updateOn === 'file-edit') {
       this.app.workspace.off('quick-preview', this.waitingForEdit);
-      this.registerEvent(this.app.workspace.on('quick-preview', this.waitingForEdit))
+      this.registerEvent(
+        this.app.workspace.on('quick-preview', this.waitingForEdit),
+      );
     } else {
-      this.update(openedFile);
+      void this.update(openedFile);
     }
     // Update the view if there is one.
     // We redraw the leaf to handle active file highlighting.
-    const leaf = this.app.workspace.getLeavesOfType(RecentFilesListViewType).first();
+    const leaf = this.app.workspace
+      .getLeavesOfType(RecentFilesListViewType)
+      .first();
     if (leaf && leaf.view instanceof RecentFilesListView) {
       leaf.view.redraw();
     }
-  }
+  };
 
   private readonly waitingForEdit = async (editedFile: TFile, data: string): Promise<void> => {
     this.update(editedFile);
     this.app.workspace.off('quick-preview', this.waitingForEdit);
-  }
+  };
 
   private readonly updateData = async (file: TFile): Promise<void> => {
     const lengthBefore = this.data.recentFiles.length;
@@ -508,7 +519,6 @@ export default class RecentFilesPlugin extends Plugin {
     file: TAbstractFile,
     oldPath: string,
   ): Promise<void> => {
-
     const entry = this.data.recentFiles.find(
       (recentFile) => recentFile.path === oldPath,
     );
@@ -559,7 +569,9 @@ class RecentFilesSettingTab extends PluginSettingTab {
     link.href =
       'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
     link.text = 'MDN - Regular expressions';
-    patternFragment.append('RegExp patterns to ignore. One pattern per line. See ');
+    patternFragment.append(
+      'RegExp patterns to ignore. One pattern per line. See ',
+    );
     patternFragment.append(link);
     patternFragment.append(' for help.');
 
@@ -579,10 +591,10 @@ class RecentFilesSettingTab extends PluginSettingTab {
         };
       });
 
-
     const tagFragment = document.createDocumentFragment();
-    tagFragment.append('Frontmatter-tag patterns to ignore. One pattern' +
-      ' per line.');
+    tagFragment.append(
+      'Frontmatter-tag patterns to ignore. One pattern' + ' per line.',
+    );
 
     new Setting(containerEl)
       .setName('Omitted frontmatter-tag patterns')
@@ -603,16 +615,14 @@ class RecentFilesSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Omit bookmarked files')
       .addToggle((toggle) => {
-        toggle
-          .setValue(this.plugin.data.omitBookmarks)
-          .onChange((value) => {
-            this.plugin.data.omitBookmarks = value;
-            this.plugin.pruneOmittedFiles();
-            this.plugin.view?.redraw();
-          });
+        toggle.setValue(this.plugin.data.omitBookmarks).onChange((value) => {
+          this.plugin.data.omitBookmarks = value;
+          void this.plugin.pruneOmittedFiles();
+          this.plugin.redrawView();
+        });
       });
 
-      new Setting(containerEl)
+    new Setting(containerEl)
       .setName('Update list when file is:')
         .addDropdown((dropdown) => {
           dropdown
@@ -657,7 +667,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const donateText = document.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
-      'continued development, please use the buttons below:',
+        'continued development, please use the buttons below:',
     );
     div.appendChild(donateText);
 
