@@ -29,6 +29,25 @@ interface BookmarkedFile {
   type: string;
 }
 
+// Augmentations for internal Obsidian APIs that are not part of the documented plugin API.
+// These should be used extremely sparingly.
+declare module 'obsidian' {
+  interface App {
+    // Used to hook into Obsidian's native drag-and-drop so dragging a list
+    // entry into the editor inserts a wikilink.
+    dragManager: {
+      dragFile(event: DragEvent, file: TFile | null): unknown;
+      onDragStart(event: DragEvent, dragData: unknown): void;
+    };
+    // Used to read the Bookmarks core plugin's entries for the
+    // "Omit bookmarked files" setting. The public API exposes no way to read
+    // another core plugin's data.
+    internalPlugins: {
+      getEnabledPluginById(id: string): { items: BookmarkedFile[] } | null;
+    };
+  }
+}
+
 interface RecentFilesData {
   recentFiles: FilePath[];
   omittedPaths: string[];
@@ -227,11 +246,12 @@ class RecentFilesListView extends ItemView {
         cls: 'recent-files-file-delete menu-item-icon',
       });
       setIcon(navFileDelete, 'lucide-x');
-      navFileDelete.addEventListener('click', async (event) => {
+      navFileDelete.addEventListener('click', (event) => {
         event.stopPropagation();
-
-        await this.removeFile(currentFile);
-        this.redraw();
+        void (async (): Promise<void> => {
+          await this.removeFile(currentFile);
+          this.redraw();
+        })();
       });
     });
 
@@ -276,7 +296,15 @@ class RecentFilesListView extends ItemView {
 
 export default class RecentFilesPlugin extends Plugin {
   public data: RecentFilesData;
-  public view: RecentFilesListView | undefined;
+
+  public readonly redrawView = (): void => {
+    const leaf = this.app.workspace
+      .getLeavesOfType(RecentFilesListViewType)
+      .first();
+    if (leaf?.view instanceof RecentFilesListView) {
+      leaf.view.redraw();
+    }
+  };
 
   public async onload(): Promise<void> {
     console.debug('Recent Files: Loading plugin v' + this.manifest.version);
@@ -287,7 +315,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     this.registerView(
       RecentFilesListViewType,
-      (leaf) => (this.view = new RecentFilesListView(leaf, this, this.data)),
+      (leaf) => new RecentFilesListView(leaf, this, this.data),
     );
 
     this.addCommand({
@@ -302,19 +330,15 @@ export default class RecentFilesPlugin extends Plugin {
         }
 
         if (leaf) {
-          this.app.workspace.revealLeaf(leaf);
+          await this.app.workspace.revealLeaf(leaf);
         }
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.app.workspace as any).registerHoverLinkSource(
-      RecentFilesListViewType,
-      {
-        display: 'Recent Files',
-        defaultMod: true,
-      },
-    );
+    this.registerHoverLinkSource(RecentFilesListViewType, {
+      display: 'Recent Files',
+      defaultMod: true,
+    });
 
     this.registerEvent(this.app.vault.on('rename', this.handleRename));
     this.registerEvent(this.app.vault.on('delete', this.handleDelete));
@@ -323,15 +347,9 @@ export default class RecentFilesPlugin extends Plugin {
     this.addSettingTab(new RecentFilesSettingTab(this.app, this));
   }
 
-  public onunload(): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.app.workspace as any).unregisterHoverLinkSource(
-      RecentFilesListViewType,
-    );
-  }
-
   public async loadData(): Promise<void> {
-    this.data = Object.assign(DEFAULT_DATA, await super.loadData());
+    const saved = (await super.loadData()) as Partial<RecentFilesData> | null;
+    this.data = { ...DEFAULT_DATA, ...saved };
   }
 
   public async saveData(): Promise<void> {
@@ -342,7 +360,7 @@ export default class RecentFilesPlugin extends Plugin {
     await this.loadData();
     await this.pruneLength();
     await this.pruneOmittedFiles();
-    this.view?.redraw();
+    this.redrawView();
   }
 
   public readonly pruneOmittedFiles = async (): Promise<void> => {
@@ -406,7 +424,8 @@ export default class RecentFilesPlugin extends Plugin {
 
        If there are no tags, the `frontmatter.tags` array is empty.
       */
-      const fileTags: string | string[] = this.app.metadataCache.getFileCache(tfile)?.frontmatter?.tags;
+      const fileTags = (this.app.metadataCache.getFileCache(tfile)?.frontmatter
+        ?.tags ?? '') as string | string[];
 
       /*
         Calling toString() here will flatten an array, or return the string.
@@ -432,10 +451,10 @@ export default class RecentFilesPlugin extends Plugin {
     }
 
     // Matches for Bookmarks
-    // @ts-ignore
-    const bookmarksPlugin = this.app.internalPlugins.getEnabledPluginById('bookmarks');
+    const bookmarksPlugin =
+      this.app.internalPlugins.getEnabledPluginById('bookmarks');
     if (tfile && this.data.omitBookmarks && bookmarksPlugin) {
-      const bookmarkedFiles: BookmarkedFile[] = bookmarksPlugin.items;
+      const bookmarkedFiles = bookmarksPlugin.items;
       if (bookmarkedFiles.some(({ path }) => path === tfile.path)) {
         return false;
       }
@@ -489,8 +508,8 @@ export default class RecentFilesPlugin extends Plugin {
     }
   };
 
-  private readonly waitingForEdit = async (editedFile: TFile, data: string): Promise<void> => {
-    this.update(editedFile);
+  private readonly waitingForEdit = (editedFile: TFile, data: string): void => {
+    void this.update(editedFile);
     this.app.workspace.off('quick-preview', this.waitingForEdit);
   };
 
@@ -525,7 +544,7 @@ export default class RecentFilesPlugin extends Plugin {
     if (entry) {
       entry.path = file.path;
       entry.basename = this.trimExtension(file.name);
-      this.view?.redraw();
+      this.redrawView();
       await this.saveData();
     }
   };
@@ -539,7 +558,7 @@ export default class RecentFilesPlugin extends Plugin {
     );
 
     if (beforeLen !== this.data.recentFiles.length) {
-      this.view?.redraw();
+      this.redrawView();
       await this.saveData();
     }
   };
@@ -586,8 +605,8 @@ class RecentFilesSettingTab extends PluginSettingTab {
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedPaths = patterns.split('\n');
-          this.plugin.pruneOmittedFiles();
-          this.plugin.view?.redraw();
+          void this.plugin.pruneOmittedFiles();
+          this.plugin.redrawView();
         };
       });
 
@@ -602,13 +621,14 @@ class RecentFilesSettingTab extends PluginSettingTab {
       .addTextArea((textArea) => {
         textArea.inputEl.setAttr('rows', 6);
         textArea
+          // eslint-disable-next-line obsidianmd/ui/sentence-case -- example regex patterns, not prose
           .setPlaceholder('ignore\narchive/a/b')
           .setValue(this.plugin.data.omittedTags.join('\n'));
         textArea.inputEl.onblur = (e: FocusEvent) => {
           const patterns = (e.target as HTMLInputElement).value;
           this.plugin.data.omittedTags = patterns.split('\n');
-          this.plugin.pruneOmittedFiles();
-          this.plugin.view?.redraw();
+          void this.plugin.pruneOmittedFiles();
+          this.plugin.redrawView();
         };
       });
 
@@ -624,17 +644,17 @@ class RecentFilesSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Update list when file is:')
-        .addDropdown((dropdown) => {
-          dropdown
-            .addOption('file-open', 'Opened')
-            .addOption('file-edit', 'Changed')
-            .setValue(this.plugin.data.updateOn)
-            .onChange((value: 'file-edit' | 'file-open') => {
-              this.plugin.data.updateOn = value;
-              this.plugin.pruneOmittedFiles();
-              this.plugin.view?.redraw();
-            });
-        });
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('file-open', 'Opened')
+          .addOption('file-edit', 'Changed')
+          .setValue(this.plugin.data.updateOn)
+          .onChange((value: 'file-edit' | 'file-open') => {
+            this.plugin.data.updateOn = value;
+            void this.plugin.pruneOmittedFiles();
+            this.plugin.redrawView();
+          });
+      });
 
     new Setting(containerEl)
       .setName('List length')
@@ -655,8 +675,8 @@ class RecentFilesSettingTab extends PluginSettingTab {
           const maxfiles = (e.target as HTMLInputElement).value;
           const parsed = parseInt(maxfiles, 10);
           this.plugin.data.maxLength = parsed;
-          this.plugin.pruneLength();
-          this.plugin.view?.redraw();
+          void this.plugin.pruneLength();
+          this.plugin.redrawView();
         };
       });
 
