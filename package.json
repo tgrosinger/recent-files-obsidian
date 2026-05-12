@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "eslint": "eslint . --ext .ts,.tsx --fix"
+    "eslint": "eslint . --fix"
   },
   "keywords": [],
   "author": "Tony Grosinger",
@@ -18,20 +18,19 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "9.39.4",
     "@types/node": "20.19.39",
-    "@typescript-eslint/eslint-plugin": "8.59.0",
-    "@typescript-eslint/parser": "8.59.0",
-    "builtin-modules": "5.1.0",
     "esbuild": "0.25.0",
-    "eslint": "8.57.1",
-    "eslint-plugin-babel": "5.3.1",
-    "eslint-plugin-import": "2.32.0",
+    "eslint": "9.39.4",
+    "eslint-plugin-import-x": "4.16.2",
     "eslint-plugin-jsdoc": "62.9.0",
-    "eslint-plugin-prefer-arrow": "1.2.3",
+    "eslint-plugin-obsidianmd": "0.1.9",
     "eslint-plugin-simple-import-sort": "13.0.0",
     "front-matter-plugin-api-provider": "0.1.4-alpha",
+    "globals": "17.6.0",
     "obsidian": "https://github.com/obsidianmd/obsidian-api/archive/23947b58d372ea02225324308e31d36b4aa95869.tar.gz",
     "tslib": "2.8.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.59.3"
   }
 }
