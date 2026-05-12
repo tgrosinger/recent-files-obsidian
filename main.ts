@@ -583,8 +583,8 @@ class RecentFilesSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    const patternFragment = document.createDocumentFragment();
-    const link = document.createElement('a');
+    const patternFragment = activeDocument.createDocumentFragment();
+    const link = activeDocument.createElement('a');
     link.href =
       'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#writing_a_regular_expression_pattern';
     link.text = 'MDN - Regular expressions';
@@ -610,7 +610,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
         };
       });
 
-    const tagFragment = document.createDocumentFragment();
+    const tagFragment = activeDocument.createDocumentFragment();
     tagFragment.append(
       'Frontmatter-tag patterns to ignore. One pattern' + ' per line.',
     );
@@ -684,7 +684,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
       cls: 'recent-files-donation',
     });
 
-    const donateText = document.createElement('p');
+    const donateText = activeDocument.createElement('p');
     donateText.appendText(
       'If this plugin adds value for you and you would like to help support ' +
         'continued development, please use the buttons below:',
@@ -710,7 +710,7 @@ class RecentFilesSettingTab extends PluginSettingTab {
 }
 
 const createDonateButton = (link: string, img: HTMLElement): HTMLElement => {
-  const a = document.createElement('a');
+  const a = activeDocument.createElement('a');
   a.setAttribute('href', link);
   a.addClass('recent-files-donate-button');
   a.appendChild(img);
