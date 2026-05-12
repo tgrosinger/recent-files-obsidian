@@ -3,7 +3,7 @@
   "name": "Recent Files",
   "version": "1.7.7",
   "minAppVersion": "0.16.3",
-  "description": "List files by most recently opened",
+  "description": "List files by most recently opened.",
   "author": "Tony Grosinger",
   "authorUrl": "https://grosinger.net",
   "isDesktopOnly": false,
@@ -11,6 +11,5 @@
     "Github Sponsor": "https://github.com/sponsors/tgrosinger",
     "Buy me a Coffee": "https://buymeacoffee.com/tgrosinger",
     "Paypal": "https://paypal.me/tgrosinger"
-  },
-  "donation": "https://buymeacoffee.com/tgrosinger"
+  }
 }
