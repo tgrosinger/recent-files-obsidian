@@ -71,17 +71,18 @@ const RecentFilesListViewType = 'recent-files';
 
 class RecentFilesListView extends ItemView {
   private readonly plugin: RecentFilesPlugin;
-  private readonly data: RecentFilesData;
 
-  constructor(
-    leaf: WorkspaceLeaf,
-    plugin: RecentFilesPlugin,
-    data: RecentFilesData,
-  ) {
+  // Always read through the plugin so the view stays in sync when loadData()
+  // replaces the data object (e.g. via onExternalSettingsChange). Capturing the
+  // reference in the constructor left the view rendering a stale, orphaned copy.
+  private get data(): RecentFilesData {
+    return this.plugin.data;
+  }
+
+  constructor(leaf: WorkspaceLeaf, plugin: RecentFilesPlugin) {
     super(leaf);
 
     this.plugin = plugin;
-    this.data = data;
   }
 
   public async onOpen(): Promise<void> {
@@ -315,7 +316,7 @@ export default class RecentFilesPlugin extends Plugin {
 
     this.registerView(
       RecentFilesListViewType,
-      (leaf) => new RecentFilesListView(leaf, this, this.data),
+      (leaf) => new RecentFilesListView(leaf, this),
     );
 
     this.addCommand({
