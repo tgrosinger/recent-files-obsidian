@@ -54,6 +54,7 @@ interface RecentFilesData {
   omittedTags: string[];
   omitBookmarks: boolean;
   updateOn: 'file-edit' | 'file-open';
+  showPath: 'no' | 'before-name' | 'after-name';
   maxLength?: number;
 }
 
@@ -64,6 +65,7 @@ const DEFAULT_DATA: RecentFilesData = {
   omittedPaths: [],
   omittedTags: [],
   updateOn: 'file-open',
+  showPath: 'no',
   omitBookmarks: false,
 };
 
@@ -151,6 +153,10 @@ class RecentFilesListView extends ItemView {
       const navFileTitleContent = navFileTitle.createDiv({
         cls: 'tree-item-inner nav-file-title-content',
       });
+      const navFileTitleText = navFileTitleContent.createSpan({
+        text: 'hello',
+        cls: 'recent-files-title-text',
+      });
       const navFileTag = navFileTitle.createDiv({
         cls: 'nav-file-tag',
       });
@@ -158,13 +164,23 @@ class RecentFilesListView extends ItemView {
         cls: 'tree-item-spacer',
       });
 
+      if (this.data.showPath !== 'no') {
+        const dirPath = currentFile.path.substring(0, currentFile.path.lastIndexOf('/'));
+        const navFileTitlePath = navFileTitleContent.createSpan({
+          text: dirPath,
+          cls: 'recent-files-title-path',
+        });
+        if (this.data.showPath == 'before-name')
+          navFileTitleContent.insertBefore(navFileTitlePath, navFileTitleText);
+      }
+
       // If the Front Matter Title plugin is enabled, get the file's title from the plugin.
       const title = frontMatterResolver
         ? (frontMatterResolver.resolve(currentFile.path) ??
           currentFile.basename)
         : currentFile.basename;
 
-      navFileTitleContent.setText(title);
+      navFileTitleText.setText(title);
 
       const tFile = this.app.vault.getFileByPath(currentFile.path);
       const extension = tFile?.extension;
@@ -656,6 +672,21 @@ class RecentFilesSettingTab extends PluginSettingTab {
             this.plugin.redrawView();
           });
       });
+
+      new Setting(containerEl)
+      .setName('Show file path:')
+        .addDropdown((dropdown) => {
+          dropdown
+            .addOption('no', 'No')
+            .addOption('before-name', 'Before name')
+            .addOption('after-name', 'After name')
+            .setValue(this.plugin.data.showPath)
+            .onChange((value: 'no' | 'before-name' | 'after-name') => {
+              this.plugin.data.showPath = value;
+              this.plugin.pruneOmittedFiles();
+              this.plugin.view?.redraw();
+            });
+        });
 
     new Setting(containerEl)
       .setName('List length')
