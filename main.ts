@@ -217,6 +217,16 @@ class RecentFilesListView extends ItemView {
               this.focusFile(currentFile, 'tab');
             }),
         );
+        menu.addItem((item) =>
+          item
+            .setSection('action')
+            .setTitle('Remove from recent files')
+            .setIcon('lucide-x')
+            .onClick(async () => {
+              await this.removeFile(currentFile);
+              this.redraw();
+            }),
+        );
         const file = this.app.vault.getAbstractFileByPath(currentFile?.path);
         this.app.workspace.trigger(
           'file-menu',

@@ -14,13 +14,15 @@
   display: none;
 }
 
-.recent-files-title:hover .recent-files-file-delete {
-  display: flex;
-  cursor: var(--cursor);
-}
+@media (hover: hover) {
+  .recent-files-title:hover .recent-files-file-delete {
+    display: flex;
+    cursor: var(--cursor);
+  }
 
-.recent-files-file-delete:hover {
-  color: var(--nav-item-color-hover);
+  .recent-files-file-delete:hover {
+    color: var(--nav-item-color-hover);
+  }
 }
 
 .recent-files-donation {
